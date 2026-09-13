@@ -26,8 +26,28 @@ docs/           Architecture, pipeline design, ADRs, incident postmortems
 
 ## Status
 
-Sprint 0 — repository scaffolding. No application code yet; see the plan document for the full roadmap.
+Sprint 5 done — see the plan document for the full roadmap. Backend (.NET, layered), frontend (Angular), TMDB integration, automated tests, and Docker Compose are all in place.
 
 ## Local development
 
-Not available yet — will be documented once the Docker Compose setup lands (Sprint 5).
+```bash
+cp .env.example .env   # fill in TMDB_API_KEY and a POSTGRES_PASSWORD
+docker compose up --build
+```
+
+This builds and starts everything:
+
+- Frontend (nginx + built Angular app): http://localhost:4200
+- Backend API (Swagger UI in Development): http://localhost:8080/swagger
+- PostgreSQL: internal to the Docker network only (not published to the host)
+
+The backend applies EF Core migrations automatically on startup. Data persists in a named Docker volume (`postgres-data`) across restarts; run `docker compose down -v` to wipe it.
+
+Running the apps outside Docker (e.g. for faster iteration) still works: `dotnet run --project app/backend/src/MovieOps.Api` and `npm start --prefix app/frontend` (the Angular dev server proxies `/api` to `http://localhost:5014`, see `app/frontend/src/proxy.conf.json`).
+
+### Tests
+
+```bash
+scripts/test.sh          # fast unit tests only
+scripts/test.sh --all    # + integration tests (Testcontainers, needs Docker) + frontend tests
+```
