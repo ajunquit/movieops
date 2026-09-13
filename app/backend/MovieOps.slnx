@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MovieOps.Api/MovieOps.Api.csproj" />
+    <Project Path="src/MovieOps.Application/MovieOps.Application.csproj" />
+    <Project Path="src/MovieOps.Domain/MovieOps.Domain.csproj" />
+    <Project Path="src/MovieOps.Infrastructure/MovieOps.Infrastructure.csproj" />
+  </Folder>
+</Solution>
