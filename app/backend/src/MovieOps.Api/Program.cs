@@ -17,11 +17,10 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
-var connectionString = builder.Configuration.GetConnectionString("Default")
-    ?? throw new InvalidOperationException("Connection string 'Default' is not configured.");
-
 builder.Services.AddHealthChecks()
-    .AddNpgSql(connectionString, name: "postgresql", tags: ["ready"]);
+    .AddNpgSql(sp => sp.GetRequiredService<IConfiguration>().GetConnectionString("Default")
+        ?? throw new InvalidOperationException("Connection string 'Default' is not configured."),
+        name: "postgresql", tags: ["ready"]);
 
 var app = builder.Build();
 

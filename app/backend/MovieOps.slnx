@@ -5,4 +5,8 @@
     <Project Path="src/MovieOps.Domain/MovieOps.Domain.csproj" />
     <Project Path="src/MovieOps.Infrastructure/MovieOps.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MovieOps.IntegrationTests/MovieOps.IntegrationTests.csproj" />
+    <Project Path="tests/MovieOps.UnitTests/MovieOps.UnitTests.csproj" />
+  </Folder>
 </Solution>

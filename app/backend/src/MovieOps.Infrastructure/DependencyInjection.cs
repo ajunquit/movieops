@@ -12,10 +12,12 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("Default")
-            ?? throw new InvalidOperationException("Connection string 'Default' is not configured.");
-
-        services.AddDbContext<MovieOpsDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddDbContext<MovieOpsDbContext>((sp, options) =>
+        {
+            var connectionString = sp.GetRequiredService<IConfiguration>().GetConnectionString("Default")
+                ?? throw new InvalidOperationException("Connection string 'Default' is not configured.");
+            options.UseNpgsql(connectionString);
+        });
         services.AddScoped<IMovieRepository, MovieRepository>();
 
         services.AddOptions<TmdbOptions>()

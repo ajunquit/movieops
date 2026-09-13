@@ -6,12 +6,14 @@ bin/
 obj/
 *.user
 *.suo
+TestResults/
 
 # Angular / Node
 node_modules/
 dist/
 .angular/
 npm-debug.log*
+coverage/
 
 # Terraform
 **/.terraform/
