@@ -1,0 +1,38 @@
+name: 'Security Scan (Trivy)'
+description: 'Runs a Trivy scan over a filesystem path (dependencies) or a container image'
+
+inputs:
+  scan-type:
+    description: "'fs' to scan dependencies on disk, 'image' to scan a built container image"
+    required: false
+    default: 'fs'
+  target:
+    description: 'Path to scan (fs) or image reference (image)'
+    required: true
+  severity:
+    description: 'Comma-separated severities that fail the build'
+    required: false
+    default: 'CRITICAL,HIGH'
+
+runs:
+  using: composite
+  steps:
+    - name: Trivy filesystem scan
+      if: inputs.scan-type == 'fs'
+      uses: aquasecurity/trivy-action@0.28.0
+      with:
+        scan-type: fs
+        scan-ref: ${{ inputs.target }}
+        severity: ${{ inputs.severity }}
+        exit-code: '1'
+        ignore-unfixed: true
+
+    - name: Trivy image scan
+      if: inputs.scan-type == 'image'
+      uses: aquasecurity/trivy-action@0.28.0
+      with:
+        scan-type: image
+        image-ref: ${{ inputs.target }}
+        severity: ${{ inputs.severity }}
+        exit-code: '1'
+        ignore-unfixed: true

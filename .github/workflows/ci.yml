@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Fan-Out: backend and frontend CI run in parallel.
+  backend:
+    name: Backend CI
+    uses: ./.github/workflows/backend-ci.yml
+
+  frontend:
+    name: Frontend CI
+    uses: ./.github/workflows/frontend-ci.yml
+
+  # Fan-In / Quality Gate: nothing is promoted unless both pipelines are green.
+  quality-gate:
+    name: Quality Gate
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: All checks passed
+        run: echo "Backend and frontend CI passed — promoting to Docker build."
+
+  docker-build:
+    name: Docker Build
+    needs: quality-gate
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/docker-build.yml
+    with:
+      # Immutable Artifact: only pushed once, on main. PRs build (to catch
+      # Dockerfile breakage) but never push.
+      push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}

@@ -1,0 +1,30 @@
+name: 'Setup & Build .NET'
+description: 'Sets up the .NET SDK, restores and builds a project or solution'
+
+inputs:
+  project-path:
+    description: 'Path to the .csproj/.slnx to restore and build'
+    required: true
+  dotnet-version:
+    description: '.NET SDK version'
+    required: false
+    default: '10.0.x'
+  configuration:
+    description: 'Build configuration'
+    required: false
+    default: 'Release'
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ inputs.dotnet-version }}
+
+    - name: Restore
+      shell: bash
+      run: dotnet restore "${{ inputs.project-path }}"
+
+    - name: Build
+      shell: bash
+      run: dotnet build "${{ inputs.project-path }}" --no-restore --configuration "${{ inputs.configuration }}"
