@@ -31,7 +31,7 @@ jobs:
         run: npx ng test --watch=false --coverage
 
       - name: Upload coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-coverage
           path: app/frontend/coverage
