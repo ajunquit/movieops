@@ -1,0 +1,40 @@
+name: Docker Build & Push
+
+on:
+  workflow_call:
+    inputs:
+      push:
+        description: 'Whether to push images to GHCR (false only builds, for PR validation)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  backend-image:
+    name: Backend image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/docker-build
+        with:
+          context: app/backend
+          dockerfile: app/backend/Dockerfile
+          image-name: ${{ github.repository_owner }}/movieops-api
+          push: ${{ inputs.push }}
+
+  frontend-image:
+    name: Frontend image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/docker-build
+        with:
+          context: app/frontend
+          dockerfile: app/frontend/Dockerfile
+          image-name: ${{ github.repository_owner }}/movieops-frontend
+          push: ${{ inputs.push }}

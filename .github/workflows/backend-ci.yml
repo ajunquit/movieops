@@ -1,0 +1,48 @@
+name: Backend CI
+
+on:
+  workflow_call:
+
+defaults:
+  run:
+    working-directory: app/backend
+
+jobs:
+  backend:
+    name: Backend (.NET)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      # Fail Fast: cheap checks (format) before compiling, tests before Docker.
+      - name: Format check
+        run: dotnet format --verify-no-changes
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Unit tests (fast)
+        run: dotnet test tests/MovieOps.UnitTests --no-build --configuration Release --collect:"XPlat Code Coverage" --results-directory ./coverage
+
+      - name: Integration tests (Testcontainers, needs Docker)
+        run: dotnet test tests/MovieOps.IntegrationTests --no-build --configuration Release
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: app/backend/coverage
+          retention-days: 7
+
+      - name: Dependency vulnerability scan
+        uses: ./.github/actions/security-scan
+        with:
+          scan-type: fs
+          target: app/backend
