@@ -1,0 +1,42 @@
+<section class="movie-list">
+  <header class="movie-list__header">
+    <h1>Mi colección</h1>
+    <a class="button" routerLink="/movies/new">Agregar película</a>
+  </header>
+
+  @if (errorMessage()) {
+    <p class="error">{{ errorMessage() }}</p>
+  }
+
+  @if (loading()) {
+    <p>Cargando…</p>
+  } @else if (movies().length === 0) {
+    <p>Todavía no agregaste ninguna película.</p>
+  } @else {
+    <table>
+      <thead>
+        <tr>
+          <th>Título</th>
+          <th>Género</th>
+          <th>Estado</th>
+          <th>Rating</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (movie of movies(); track movie.id) {
+          <tr>
+            <td>{{ movie.title }}</td>
+            <td>{{ movie.genre || '—' }}</td>
+            <td>{{ movie.status }}</td>
+            <td>{{ movie.rating ?? '—' }}</td>
+            <td class="actions">
+              <a [routerLink]="['/movies', movie.id, 'edit']">Editar</a>
+              <button type="button" (click)="remove(movie)">Eliminar</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</section>

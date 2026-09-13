@@ -1,0 +1,78 @@
+<section class="movie-form">
+  <h1>{{ isEditMode() ? 'Editar película' : 'Agregar película' }}</h1>
+
+  @if (errorMessage()) {
+    <p class="error">{{ errorMessage() }}</p>
+  }
+
+  <form [formGroup]="movieForm" (ngSubmit)="submitMovie()">
+    <label>
+      TMDB Id
+      <input type="number" formControlName="tmdbId" />
+    </label>
+
+    <label>
+      Título
+      <input type="text" formControlName="title" />
+    </label>
+
+    <label>
+      Descripción
+      <textarea formControlName="description" rows="3"></textarea>
+    </label>
+
+    <label>
+      Fecha de estreno
+      <input type="date" formControlName="releaseDate" />
+    </label>
+
+    <label>
+      Poster URL
+      <input type="text" formControlName="posterUrl" />
+    </label>
+
+    <label>
+      Género
+      <input type="text" formControlName="genre" />
+    </label>
+
+    <div class="form-actions">
+      <button type="submit">Guardar</button>
+      <a routerLink="/movies">Cancelar</a>
+    </div>
+  </form>
+
+  @if (isEditMode()) {
+    <hr />
+    <h2>Mi colección</h2>
+
+    @if (collectionErrorMessage()) {
+      <p class="error">{{ collectionErrorMessage() }}</p>
+    }
+
+    <form [formGroup]="collectionForm" (ngSubmit)="submitCollection()">
+      <label>
+        Estado
+        <select formControlName="status">
+          @for (status of watchStatuses; track status) {
+            <option [value]="status">{{ status }}</option>
+          }
+        </select>
+      </label>
+
+      <label>
+        Rating (1-10)
+        <input type="number" min="1" max="10" formControlName="rating" />
+      </label>
+
+      <label>
+        Comentario
+        <textarea formControlName="comment" rows="3"></textarea>
+      </label>
+
+      <div class="form-actions">
+        <button type="submit">Actualizar colección</button>
+      </div>
+    </form>
+  }
+</section>
