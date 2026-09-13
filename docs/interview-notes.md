@@ -76,6 +76,20 @@ Format: **Situation** (context) → **Task** (what needed to happen) → **Actio
 
 ---
 
+## Sprint 7 — AKS rejects its own default network config
+
+**Situation:** First real `terraform apply` against Azure (dev environment): resource group, VNet/subnet, Log Analytics, ACR, Key Vault + secret, and Postgres Flexible Server all created successfully (~7 minutes). Then `azurerm_kubernetes_cluster.main` failed.
+
+**Task:** Diagnose a `400 Bad Request` from the Azure API on cluster creation, without burning more time (and cost) on repeated failed applies.
+
+**Action:** Error: `ServiceCidrOverlapExistingSubnetsCidr` — "the specified service CIDR 10.0.0.0/16 is conflicted with an existing subnet CIDR 10.0.1.0/24." Root cause: the `network_profile` block didn't set `service_cidr` explicitly, so AKS defaulted to `10.0.0.0/16` for its internal Kubernetes Service IPs — which is exactly the VNet's own address space (also `10.0.0.0/16`, containing the `10.0.1.0/24` node subnet). Two independent IP address plans (the VNet's and AKS's internal services) collided because one was implicit. Fixed by setting `service_cidr = "172.16.0.0/16"` and `dns_service_ip = "172.16.0.10"` — a range guaranteed not to overlap the VNet.
+
+**Result:** Since Postgres/ACR/Key Vault/network were already applied and safely recorded in state, the fix only needed to `plan`/`apply` the 2 missing AKS resources — Terraform didn't touch anything already created. Cluster came up in ~5 minutes; validated for real by pushing a backend image to the real ACR and running a pod on the real AKS node that pulled it with **zero `imagePullSecrets`**, proving the `AcrPull` role assignment (also Terraform-managed) actually works end-to-end.
+
+**Answers:** ¿Por qué Terraform? (el state parcial es justamente lo que evita rehacer todo por un solo recurso fallido) · ¿Cómo organizar módulos Terraform? · Tema de Kubernetes networking (CIDR planning, IPAM) que rara vez se toca hasta que falla en producción.
+
+---
+
 ## Design decisions worth their own STAR (no bug, but interview-worthy)
 
 These didn't come from a failure — they're judgment calls made deliberately, which interviewers value just as much as debugging stories.
@@ -101,6 +115,8 @@ From [section 54](../MovieOps_DevOps_Plan.md):
 - ¿Cómo manejar secretos? → `.env` / `.gitignore` discipline (Sprint 0), `Tmdb__ApiKey` never committed (Sprint 3)
 - ¿Qué diferencia hay entre readiness y liveness? → Sprint 5 entry (the nginx IPv6 bug)
 - ¿Cómo hacer resiliente una integración externa? → Sprint 3 entry
-- ¿Por qué Terraform? / ¿Cómo organizar módulos? → ADR-0001 entry (more depth coming Sprint 7)
+- ¿Por qué Terraform? / ¿Cómo organizar módulos? → ADR-0001 + Sprint 7 entry (real apply, real bug, real fix)
+- ¿Qué diferencia hay entre `plan` y `apply`? → Sprint 7: the plan showed 17 resources; after the AKS failure, the next plan showed only the 2 still missing — state is what makes that possible
+- ¿Cómo manejar secretos? (ampliado) → Sprint 7: generated Postgres password never touched `.tfvars`/CLI history, went straight into `random_password` → Key Vault
 
-Still open (will fill in as we build): plan vs. apply, rolling/blue-green/canary, GitOps/drift/reconciliation, Argo Rollouts, full incident-simulation set (Sprint 13).
+Still open (will fill in as we build): rolling/blue-green/canary, GitOps/drift/reconciliation, Argo Rollouts, full incident-simulation set (Sprint 13).
