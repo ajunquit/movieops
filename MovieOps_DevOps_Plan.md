@@ -62,12 +62,21 @@ La aplicación será solo el producto base. El verdadero objetivo será construi
 - Dependabot
 - Checkov
 - OpenTelemetry
+- Prometheus
+- Grafana
 - Logs
 - Metrics
 - Traces
 - Health Checks
 - Monitoring
 - Alerting
+
+## Cloud
+
+- **Azure** (proveedor inicial): AKS, ACR, Azure Database for PostgreSQL Flexible Server, Azure Key Vault, VNet.
+- **AWS** (proveedor futuro, misma plataforma reimplementada más adelante): EKS, ECR, RDS, Secrets Manager, VPC.
+
+> Principio: la infraestructura se modela por proveedor sin abstracción multi-cloud prematura (ver sección 24). La observabilidad, en cambio, se construye deliberadamente **portable** entre proveedores (ver sección 45).
 
 ---
 
@@ -326,17 +335,22 @@ movieops/
 │
 ├── terraform/
 │   ├── modules/
-│   │   ├── network/
-│   │   ├── postgres/
-│   │   ├── container-registry/
-│   │   ├── kubernetes/
-│   │   ├── secrets/
-│   │   └── monitoring/
+│   │   ├── azure/
+│   │   │   ├── network/
+│   │   │   ├── postgres/
+│   │   │   ├── container-registry/
+│   │   │   ├── kubernetes/
+│   │   │   ├── secrets/
+│   │   │   └── monitoring/
+│   │   │
+│   │   └── aws/               # se completa cuando se replique en AWS
 │   │
 │   ├── environments/
-│   │   ├── dev/
-│   │   ├── staging/
-│   │   └── production/
+│   │   └── azure/
+│   │       ├── dev/
+│   │       ├── staging/
+│   │       └── production/
+│   │       # environments/aws/ se agrega en la fase AWS, sin tocar azure/
 │   │
 │   ├── main.tf
 │   ├── variables.tf
@@ -943,22 +957,30 @@ Orquestación:
 
 Terraform se usará para aprovisionar infraestructura.
 
+**Proveedor inicial: Azure.** Más adelante se replicará la misma plataforma en **AWS**. Para evitar reestructurar todo cuando llegue ese momento, los módulos y ambientes se organizan por proveedor desde el principio — sin escribir abstracciones multi-cloud (`if var.cloud_provider == "azure"`) que compliquen cada cambio sin necesidad real todavía. Esto es una aplicación directa del principio "no sobre-diseñar" (sección 5): se construye bien para Azure hoy, y se agrega `aws/` como implementación paralela cuando corresponda, reutilizando el aprendizaje, no el código.
+
 Estructura:
 
 ```text
 terraform/
 ├── modules/
-│   ├── network/
-│   ├── postgres/
-│   ├── container-registry/
-│   ├── kubernetes/
-│   ├── secrets/
-│   └── monitoring/
+│   ├── azure/
+│   │   ├── network/                → Azure VNet, Subnets, NSGs
+│   │   ├── postgres/                → Azure Database for PostgreSQL Flexible Server
+│   │   ├── container-registry/      → Azure Container Registry (ACR)
+│   │   ├── kubernetes/              → AKS
+│   │   ├── secrets/                 → Azure Key Vault
+│   │   └── monitoring/              → soporte para Prometheus/Grafana self-hosted (ver sección 45)
+│   │
+│   └── aws/                         # vacío hasta la fase AWS: network/, postgres/ (RDS),
+│                                     # container-registry/ (ECR), kubernetes/ (EKS), secrets/ (Secrets Manager)
 │
 └── environments/
-    ├── dev/
-    ├── staging/
-    └── production/
+    └── azure/
+        ├── dev/
+        ├── staging/
+        └── production/
+        # environments/aws/{dev,staging,production} se agrega en la fase AWS
 ```
 
 Conceptos:
@@ -1462,15 +1484,17 @@ Separación de responsabilidades:
 ## Terraform
 
 ```text
-Cloud
+Azure
  │
- ├── Network
- ├── Kubernetes Cluster
- ├── PostgreSQL
- ├── Container Registry
+ ├── Network              (VNet)
+ ├── Kubernetes Cluster   (AKS)
+ ├── PostgreSQL           (Flexible Server)
+ ├── Container Registry   (ACR)
  ├── IAM
  └── Argo CD
 ```
+
+> La misma responsabilidad se reimplementará en AWS más adelante (VPC, EKS, RDS, ECR) sin cambiar lo que Terraform le entrega a Kubernetes/Argo CD — ver sección 24.
 
 ## Argo CD
 
@@ -1749,6 +1773,18 @@ Se incorporarán:
 - Dashboards.
 - Alerts.
 - OpenTelemetry.
+
+> **Principio: evitar atarse a Azure Monitor.** Dado que la plataforma se reimplementará en AWS más adelante (sección 24), el stack de observabilidad se construye con herramientas **portables entre clouds**, no con el servicio nativo del proveedor:
+>
+> ```text
+> OpenTelemetry (instrumentación)
+>        ↓
+> Prometheus (metrics, self-hosted en el cluster)
+>        ↓
+> Grafana (dashboards, self-hosted en el cluster)
+> ```
+>
+> Este stack corre igual sobre AKS que sobre EKS — el mismo Helm chart / manifiesto de Kubernetes, sin reescribir nada al migrar de proveedor. Azure Monitor / Log Analytics queda descartado como backend principal precisamente porque ese trabajo no se trasladaría a AWS.
 
 Métricas a observar:
 
@@ -2130,27 +2166,29 @@ Objetivos:
 
 ---
 
-## Sprint 7 — Terraform
+## Sprint 7 — Terraform (Azure)
 
 Objetivos:
 
-- Providers.
+- Provider `azurerm`.
 - Backend remoto.
 - State.
-- Modules.
+- Modules bajo `terraform/modules/azure/`.
 - DEV.
 - STAGING.
 - PROD.
-- Network.
-- Registry.
-- PostgreSQL.
-- Kubernetes.
-- Secrets.
-- Monitoring.
+- Network (VNet).
+- Registry (ACR).
+- PostgreSQL (Flexible Server).
+- Kubernetes (AKS).
+- Secrets (Key Vault).
+- Monitoring (soporte base para Prometheus/Grafana self-hosted, sección 45).
 
 Patrón:
 
 - Plan Before Apply.
+
+> `terraform/modules/aws/` y `terraform/environments/aws/` se agregan en una fase posterior, reimplementando este mismo sprint para AWS sin modificar lo construido para Azure.
 
 ---
 
