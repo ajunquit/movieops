@@ -19,8 +19,8 @@ Tracks which patterns from [MovieOps_DevOps_Plan.md](../../MovieOps_DevOps_Plan.
 | Shift Left Security | ✅ | Trivy filesystem scan on every CI run (`security-scan` action); CodeQL SAST (`codeql.yml`); Dependabot (`dependabot.yml`) |
 | Health Checks | ✅ | `/health`, `/health/live`, `/health/ready` (backend); container `HEALTHCHECK` (both Dockerfiles) — since Sprint 1/5 |
 | Automatic Rollback | 🔜 | Sprint 8 |
-| Infrastructure as Code | 🔜 | Sprint 7 (Terraform) |
-| Plan Before Apply | 🔜 | Sprint 7 |
+| Infrastructure as Code | ✅ | `terraform/modules/azure/{network,postgres,container-registry,secrets,kubernetes,monitoring}` — applied for real against Azure (dev), validated (AKS pulled from ACR with zero `imagePullSecrets`), then destroyed |
+| Plan Before Apply | ✅ | `terraform fmt` → `validate` → `plan` (reviewed, 17 resources) → `apply`; automating this into `terraform.yml` with a manual-approval gate is next |
 | Blue-Green | 🔜 | Sprint 12 (Argo Rollouts) |
 | Canary | 🔜 | Sprint 12 |
 | Progressive Delivery | 🔜 | Sprint 12 |
@@ -43,3 +43,5 @@ Tracks which patterns from [MovieOps_DevOps_Plan.md](../../MovieOps_DevOps_Plan.
 - **Docker images build on every PR, but only push on `main`.** This still catches a broken Dockerfile on every PR (Fail Fast) without polluting the registry with throwaway PR builds.
 - **`dotnet format --verify-no-changes` and `tsc --noEmit`** are the "cheap" fail-fast steps for backend and frontend respectively — no dedicated linter was introduced for the frontend yet (ESLint setup is a deliberate deferral, not an oversight, to avoid adding tooling the codebase doesn't need yet).
 - **Integration tests run in CI**, not just locally — GitHub-hosted `ubuntu-latest` runners have Docker preinstalled, so Testcontainers-based tests (Sprint 4) work unmodified.
+- **Terraform gets its own pipeline, not a CD stage.** Per plan section 26/40: Terraform provisions the "field" (cluster, network, DB, registry), CD/Argo CD later deploys the "players" (the app) onto it. Mixing them means every app deploy would re-evaluate infrastructure. `terraform.yml` will trigger only on changes under `terraform/**`, and gate `apply` behind a manual approval (GitHub Environment protection) since it's real cost and real infra, unlike `ci.yml`'s Docker builds.
+- **ACR now exists for real** (Sprint 7, dev environment) — GHCR remains the CI registry for now (ADR-0001); the app's CD pipeline (Sprint 8+) is what will actually push to ACR for deployment onto AKS.
