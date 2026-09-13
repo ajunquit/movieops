@@ -45,4 +45,15 @@ public class MoviesController(IMovieService movieService) : ControllerBase
     {
         return Ok(await movieService.UpdateCollectionAsync(id, dto, cancellationToken));
     }
+
+    [HttpGet("search")]
+    public async Task<ActionResult<IReadOnlyList<TmdbMovieDto>>> Search([FromQuery] string query, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return BadRequest("Query parameter 'query' is required.");
+        }
+
+        return Ok(await movieService.SearchAsync(query, cancellationToken));
+    }
 }

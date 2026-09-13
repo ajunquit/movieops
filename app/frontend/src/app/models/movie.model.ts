@@ -39,3 +39,11 @@ export interface UpdateMovieCollectionRequest {
   rating?: number | null;
   comment?: string | null;
 }
+
+export interface TmdbMovie {
+  tmdbId: number;
+  title: string;
+  description: string | null;
+  releaseDate: string | null;
+  posterUrl: string | null;
+}

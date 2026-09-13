@@ -5,7 +5,7 @@ using MovieOps.Domain.Entities;
 
 namespace MovieOps.Application.Services;
 
-public class MovieService(IMovieRepository repository) : IMovieService
+public class MovieService(IMovieRepository repository, ITmdbClient tmdbClient) : IMovieService
 {
     public async Task<IReadOnlyList<MovieDto>> GetAllAsync(CancellationToken cancellationToken)
     {
@@ -86,6 +86,11 @@ public class MovieService(IMovieRepository repository) : IMovieService
 
         await repository.SaveChangesAsync(cancellationToken);
         return ToDto(movie);
+    }
+
+    public Task<IReadOnlyList<TmdbMovieDto>> SearchAsync(string query, CancellationToken cancellationToken)
+    {
+        return tmdbClient.SearchAsync(query, cancellationToken);
     }
 
     private async Task<Movie> GetMovieOrThrowAsync(Guid id, CancellationToken cancellationToken)

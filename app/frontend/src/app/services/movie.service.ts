@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import {
   CreateMovieRequest,
   Movie,
+  TmdbMovie,
   UpdateMovieCollectionRequest,
   UpdateMovieRequest,
 } from '../models/movie.model';
@@ -36,5 +37,9 @@ export class MovieService {
 
   updateCollection(id: string, request: UpdateMovieCollectionRequest): Observable<Movie> {
     return this.http.patch<Movie>(`${this.baseUrl}/${id}/collection`, request);
+  }
+
+  search(query: string): Observable<TmdbMovie[]> {
+    return this.http.get<TmdbMovie[]>(`${this.baseUrl}/search`, { params: { query } });
   }
 }

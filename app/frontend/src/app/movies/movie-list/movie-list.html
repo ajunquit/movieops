@@ -1,7 +1,10 @@
 <section class="movie-list">
   <header class="movie-list__header">
     <h1>Mi colección</h1>
-    <a class="button" routerLink="/movies/new">Agregar película</a>
+    <div class="header-actions">
+      <a routerLink="/movies/search">Buscar en TMDB</a>
+      <a class="button" routerLink="/movies/new">Agregar manualmente</a>
+    </div>
   </header>
 
   @if (errorMessage()) {

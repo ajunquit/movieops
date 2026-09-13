@@ -5,6 +5,12 @@
   margin-bottom: 1rem;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;

@@ -10,4 +10,5 @@ public interface IMovieService
     Task<MovieDto> UpdateAsync(Guid id, UpdateMovieDto dto, CancellationToken cancellationToken);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken);
     Task<MovieDto> UpdateCollectionAsync(Guid id, UpdateMovieCollectionDto dto, CancellationToken cancellationToken);
+    Task<IReadOnlyList<TmdbMovieDto>> SearchAsync(string query, CancellationToken cancellationToken);
 }

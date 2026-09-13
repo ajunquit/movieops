@@ -1,0 +1,48 @@
+<section class="movie-search">
+  <h1>Buscar en TMDB</h1>
+
+  <form class="search-form" (ngSubmit)="search()">
+    <input
+      type="text"
+      name="query"
+      placeholder="Ej: Interstellar"
+      [(ngModel)]="query"
+    />
+    <button type="submit">Buscar</button>
+  </form>
+
+  @if (errorMessage()) {
+    <p class="error">{{ errorMessage() }}</p>
+  }
+
+  @if (loading()) {
+    <p>Buscando…</p>
+  } @else if (searched() && results().length === 0 && !errorMessage()) {
+    <p>No se encontraron resultados.</p>
+  }
+
+  <ul class="results">
+    @for (movie of results(); track movie.tmdbId) {
+      <li class="result">
+        @if (movie.posterUrl) {
+          <img [src]="movie.posterUrl" [alt]="movie.title" />
+        }
+        <div class="result__info">
+          <h3>{{ movie.title }}</h3>
+          <p class="muted">{{ movie.releaseDate || 'Fecha desconocida' }}</p>
+          <p>{{ movie.description || 'Sin descripción disponible.' }}</p>
+
+          @if (isAdded(movie)) {
+            <span class="added">Agregada a tu colección ✓</span>
+          } @else {
+            <button type="button" (click)="addToCollection(movie)">Agregar a mi colección</button>
+          }
+
+          @if (addErrorId() === movie.tmdbId) {
+            <p class="error">Ya está en tu colección o no se pudo agregar.</p>
+          }
+        </div>
+      </li>
+    }
+  </ul>
+</section>
