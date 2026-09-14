@@ -6,7 +6,13 @@ metadata:
     app: movieops
     tier: backend
 spec:
-  replicas: 1
+  # No replicas field: the HorizontalPodAutoscaler (hpa.yaml) owns this value.
+  # Setting a static replicas here would fight the HPA on every kubectl apply.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: movieops
