@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Both `terraform.yml` (plan/apply, pending) and `apocalipsis.yml` (destroy, this sprint) need GitHub Actions to authenticate to Azure. The two common options are: a service principal with a long-lived client secret stored as a GitHub secret, or **workload identity federation (OIDC)** — GitHub issues a short-lived signed token per workflow run, which Azure AD trusts without any stored secret at all.
+Both `genesis.yml` (create, plan+apply) and `apocalipsis.yml` (destroy, this sprint) need GitHub Actions to authenticate to Azure. The two common options are: a service principal with a long-lived client secret stored as a GitHub secret, or **workload identity federation (OIDC)** — GitHub issues a short-lived signed token per workflow run, which Azure AD trusts without any stored secret at all.
 
 ## Decision
 

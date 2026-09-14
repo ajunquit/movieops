@@ -1,32 +1,29 @@
-name: Terraform (Plan & Apply)
+name: Genesis (Create Infrastructure)
 
-# The infrastructure lifecycle pipeline — separate from ci.yml and deploy.yml
-# on purpose (see docs/pipelines/PIPELINE_PATTERNS.md: Terraform provisions
-# the "field", CD deploys the "players" onto it). Manual only: infra changes
-# are rare, slow, and costly compared to app deploys, so there's no
-# push/schedule trigger here.
+# The creation counterpart to apocalipsis.yml (destroy). Manual-only, on
+# purpose: this provisions real cloud infrastructure and costs real money.
+# Same safety pattern as apocalipsis.yml — typed confirmation + the
+# per-environment GitHub Environment gate (production requires a reviewer).
 on:
   workflow_dispatch:
     inputs:
       environment:
-        description: 'Environment to plan/apply'
+        description: 'Environment to create'
         type: choice
         options: [dev, staging, production]
         required: true
-      action:
-        description: "'plan' only shows what would change; 'apply' actually does it"
-        type: choice
-        options: [plan, apply]
-        default: plan
+      confirm:
+        description: 'Type the environment name exactly to confirm'
         required: true
+        type: string
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  terraform:
-    name: Terraform ${{ inputs.action }} — ${{ inputs.environment }}
+  create:
+    name: Create ${{ inputs.environment }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     defaults:
@@ -38,10 +35,16 @@ jobs:
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
       ARM_USE_OIDC: true
     steps:
+      - name: Verify typed confirmation
+        run: |
+          if [ "${{ inputs.confirm }}" != "${{ inputs.environment }}" ]; then
+            echo "::error::You typed '${{ inputs.confirm }}', which does not match the selected environment '${{ inputs.environment }}'. Aborting without touching anything."
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
 
       - name: Check this environment has a Terraform config
-        id: check
         run: |
           if [ ! -f main.tf ]; then
             echo "::error::terraform/environments/azure/${{ inputs.environment }} has no Terraform config yet."
@@ -72,8 +75,5 @@ jobs:
       - name: Terraform plan
         run: terraform plan -out=tfplan
 
-      # Everything above runs for 'plan' too, so a PR-style review can happen
-      # without ever touching real infrastructure.
       - name: Terraform apply
-        if: inputs.action == 'apply'
         run: terraform apply -auto-approve tfplan
