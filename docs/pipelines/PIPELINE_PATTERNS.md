@@ -13,12 +13,12 @@ Tracks which patterns from [MovieOps_DevOps_Plan.md](../../MovieOps_DevOps_Plan.
 | Quality Gates | ✅ | `quality-gate` job in `ci.yml` — Docker build only runs if backend and frontend CI both pass |
 | Immutable Artifact | ✅ | One image per commit, tagged with the git SHA; the same image is meant to move through DEV/STG/PROD once CD exists (Sprint 8) |
 | Artifact Versioning | ✅ | `movieops-api:sha-<short-sha>` / `movieops-frontend:sha-<short-sha>`, plus `:latest` on `main` |
-| Build Once, Deploy Many | 🔜 | Tagging is in place; actual multi-environment promotion arrives with CD (Sprint 8) |
-| Environment Promotion | 🔜 | Sprint 8 |
-| Externalized Configuration | ✅ | Images carry no environment-specific config; see `docker-compose.yml` env vars and ADR-0001/0002 |
+| Build Once, Deploy Many | 🟡 | `deploy.yml` uses `az acr import` to copy the exact GHCR image built by `ci.yml` into the target environment's ACR — no rebuild. Code complete, not yet run live |
+| Environment Promotion | 🟡 | `cd-dev.yml` / `cd-staging.yml` / `cd-production.yml` — same `image_tag` input flows through all three, `production` gated by required-reviewer. Code complete, not yet run live |
+| Externalized Configuration | ✅ | Images carry no environment-specific config; see `docker-compose.yml` env vars, `k8s/base/backend/configmap.yaml`, and ADR-0001/0002 |
 | Shift Left Security | ✅ | Trivy filesystem scan on every CI run (`security-scan` action); CodeQL SAST (`codeql.yml`); Dependabot (`dependabot.yml`) |
-| Health Checks | ✅ | `/health`, `/health/live`, `/health/ready` (backend); container `HEALTHCHECK` (both Dockerfiles) — since Sprint 1/5 |
-| Automatic Rollback | 🔜 | Sprint 8 |
+| Health Checks | ✅ | `/health`, `/health/live`, `/health/ready` (backend); container `HEALTHCHECK` (both Dockerfiles); k8s liveness/readiness probes (`k8s/base/*/deployment.yaml`) — since Sprint 1/5/8 |
+| Automatic Rollback | 🟡 | `deploy.yml`: `kubectl rollout status` (health gate) + smoke test against the LoadBalancer IP; either failing triggers `kubectl rollout undo`. Code complete, not yet run live |
 | Infrastructure as Code | ✅ | `terraform/modules/azure/{network,postgres,container-registry,secrets,kubernetes,monitoring}` — applied for real against Azure (dev), validated (AKS pulled from ACR with zero `imagePullSecrets`), then destroyed |
 | Plan Before Apply | ✅ | `terraform fmt` → `validate` → `plan` (reviewed, 17 resources) → `apply`; automating this into `terraform.yml` with a manual-approval gate is next |
 | Blue-Green | 🔜 | Sprint 12 (Argo Rollouts) |
@@ -45,3 +45,6 @@ Tracks which patterns from [MovieOps_DevOps_Plan.md](../../MovieOps_DevOps_Plan.
 - **Integration tests run in CI**, not just locally — GitHub-hosted `ubuntu-latest` runners have Docker preinstalled, so Testcontainers-based tests (Sprint 4) work unmodified.
 - **Terraform gets its own pipeline, not a CD stage.** Per plan section 26/40: Terraform provisions the "field" (cluster, network, DB, registry), CD/Argo CD later deploys the "players" (the app) onto it. Mixing them means every app deploy would re-evaluate infrastructure. `terraform.yml` will trigger only on changes under `terraform/**`, and gate `apply` behind a manual approval (GitHub Environment protection) since it's real cost and real infra, unlike `ci.yml`'s Docker builds.
 - **ACR now exists for real** (Sprint 7, dev environment) — GHCR remains the CI registry for now (ADR-0001); the app's CD pipeline (Sprint 8+) is what will actually push to ACR for deployment onto AKS.
+- **Sprint 8 (CD) is code-complete but not yet run live.** Building it required re-provisioning AKS + Postgres (destroyed at the end of Sprint 7 to stop billing), so live validation is deliberately batched together with Sprint 9's Kubernetes work into one apply → validate-both → destroy pass, instead of two separate cost cycles.
+- **No `Namespace` yet** — everything deploys to `default`. Introducing namespaces properly (one per environment sharing a cluster, vs. one cluster per environment as we have now) is a Sprint 9 concept, not bolted on early.
+- **Secrets are created imperatively by `deploy.yml`** (`kubectl create secret ... --dry-run=client -o yaml | kubectl apply -f -`) from GitHub Secrets — never as a committed manifest. Continues the `.env` → GitHub Secrets → Key Vault → **Kubernetes Secrets** chain from plan section 11.

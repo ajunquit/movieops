@@ -1,0 +1,113 @@
+name: Deploy
+
+# Reusable push-based CD: promotes an already-built image (from ci.yml, in GHCR)
+# into the target environment's ACR without rebuilding it (Build Once, Deploy
+# Many), applies it to AKS via kubectl, waits for rollout health, smoke-tests
+# it, and rolls back automatically if either fails.
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      image_tag:
+        description: "Image tag to deploy, e.g. sha-abc1234 (from ci.yml's docker-build)"
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_USE_OIDC: true
+      RESOURCE_GROUP: rg-movieops-${{ inputs.environment }}
+      CLUSTER_NAME: aks-movieops-${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - uses: azure/setup-kubectl@v4
+
+      - name: Install kustomize
+        run: |
+          curl -sL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.3/kustomize_v5.4.3_linux_amd64.tar.gz" | tar xz
+          sudo mv kustomize /usr/local/bin/kustomize
+
+      - name: Get AKS credentials
+        run: az aks get-credentials --resource-group "$RESOURCE_GROUP" --name "$CLUSTER_NAME" --overwrite-existing
+
+      - name: Promote image from GHCR into this environment's ACR (no rebuild)
+        id: acr
+        run: |
+          ACR_LOGIN_SERVER=$(az acr list --resource-group "$RESOURCE_GROUP" --query "[0].loginServer" -o tsv)
+          echo "login_server=$ACR_LOGIN_SERVER" >> "$GITHUB_OUTPUT"
+
+          for IMAGE in movieops-api movieops-frontend; do
+            az acr import \
+              --name "${ACR_LOGIN_SERVER%%.*}" \
+              --source "ghcr.io/${{ github.repository_owner }}/$IMAGE:${{ inputs.image_tag }}" \
+              --image "$IMAGE:${{ inputs.image_tag }}" \
+              --username "${{ github.actor }}" \
+              --password "${{ secrets.GITHUB_TOKEN }}" \
+              --force
+          done
+
+      - name: Create/update application secrets
+        run: |
+          kubectl create secret generic backend-secrets \
+            --from-literal=ConnectionStrings__Default="${{ secrets.BACKEND_DB_CONNECTION_STRING }}" \
+            --from-literal=Tmdb__ApiKey="${{ secrets.TMDB_API_KEY }}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Set image tags (Kustomize)
+        working-directory: k8s/base
+        run: |
+          (cd backend && kustomize edit set image "placeholder/movieops-api:latest=${{ steps.acr.outputs.login_server }}/movieops-api:${{ inputs.image_tag }}")
+          (cd frontend && kustomize edit set image "placeholder/movieops-frontend:latest=${{ steps.acr.outputs.login_server }}/movieops-frontend:${{ inputs.image_tag }}")
+
+      - name: Apply manifests
+        run: kubectl apply -k k8s/base
+
+      - name: Wait for rollout (health gate)
+        id: rollout
+        run: |
+          kubectl rollout status deployment/backend --timeout=180s
+          kubectl rollout status deployment/frontend --timeout=180s
+
+      - name: Smoke test
+        id: smoke
+        if: steps.rollout.outcome == 'success'
+        run: |
+          EXTERNAL_IP=$(kubectl get service frontend -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          for i in $(seq 1 15); do
+            if curl -sf "http://$EXTERNAL_IP/api/movies" > /dev/null; then
+              echo "Smoke test passed."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Smoke test failed against http://$EXTERNAL_IP/api/movies"
+          exit 1
+
+      - name: Automatic rollback on failure
+        if: failure() && (steps.rollout.outcome == 'failure' || steps.smoke.outcome == 'failure')
+        run: |
+          echo "::warning::Deployment failed health/smoke checks — rolling back."
+          kubectl rollout undo deployment/backend
+          kubectl rollout undo deployment/frontend
+          kubectl rollout status deployment/backend --timeout=120s
+          kubectl rollout status deployment/frontend --timeout=120s
