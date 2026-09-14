@@ -6,9 +6,9 @@ metadata:
     app: movieops
     tier: frontend
 spec:
-  # LoadBalancer for now (Sprint 8: keep it simple). Becomes an Ingress in Sprint 9,
-  # once we've actually covered Ingress as a concept rather than skipped straight to it.
-  type: LoadBalancer
+  # ClusterIP: the Ingress (k8s/base/ingress) is now the single external entry
+  # point, replacing the Sprint 8 LoadBalancer Service.
+  type: ClusterIP
   selector:
     app: movieops
     tier: frontend
