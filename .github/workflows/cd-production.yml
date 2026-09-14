@@ -1,0 +1,22 @@
+name: CD - Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to promote, e.g. sha-abc1234 (must already be validated in staging)"
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy.yml
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      environment: production
+      image_tag: ${{ inputs.image_tag }}
+    secrets: inherit
+    # The "production" GitHub Environment has a required reviewer configured
+    # (see ADR-0004) — this run pauses for manual approval before it starts.

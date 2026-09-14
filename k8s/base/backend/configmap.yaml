@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+data:
+  ASPNETCORE_ENVIRONMENT: 'Production'
+  Tmdb__BaseUrl: 'https://api.themoviedb.org/3/'
+  Tmdb__ImageBaseUrl: 'https://image.tmdb.org/t/p/w500'
+  Tmdb__CacheDurationSeconds: '300'

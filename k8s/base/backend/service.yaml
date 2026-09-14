@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  # Name matters: the frontend's nginx.conf proxies /api/ to http://backend:8080/,
+  # the same hostname it already uses in docker-compose. Same image, no rebuild needed.
+  name: backend
+  labels:
+    app: movieops
+    tier: backend
+spec:
+  type: ClusterIP
+  selector:
+    app: movieops
+    tier: backend
+  ports:
+    - port: 8080
+      targetPort: 8080

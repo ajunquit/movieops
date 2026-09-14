@@ -90,6 +90,20 @@ Format: **Situation** (context) → **Task** (what needed to happen) → **Actio
 
 ---
 
+## Sprint 8 — designing "Build Once, Deploy Many" so it's actually true, not just a tag
+
+**Situation:** `ci.yml` (Sprint 6) already builds and tags an image once, pushing to GHCR. Sprint 8 needed to actually *deploy* that image — but the deployment target is AKS + ACR (Sprint 7, Azure), a different registry than CI uses.
+
+**Task:** Deploy the exact bits CI tested, not a re-pull, re-tag, or (worse) a rebuild against the target environment — because a rebuild is precisely the "build once, deploy many" violation the pattern exists to prevent (a rebuild could pick up a dependency update between CI and deploy and silently ship something never tested).
+
+**Action:** `deploy.yml` uses `az acr import --source ghcr.io/.../movieops-api:<sha-tag>` — a server-side registry-to-registry copy. No `docker pull`/`docker push`, no local Docker daemon involved in the CD runner at all; Azure copies the manifest and layers directly between registries. The image's digest travels unchanged from GHCR to ACR.
+
+**Result:** The same artifact that passed `ci.yml`'s tests is what runs in every environment — provably, since the digest never changes across the copy. (Not yet run live — see the note in `docs/pipelines/PIPELINE_PATTERNS.md` about batching Sprint 8+9 validation together.)
+
+**Answers:** ¿Qué significa Build Once, Deploy Many? · ¿Cómo versionar imágenes Docker? · ¿Qué diferencia hay entre CI y CD? (CI never talks to Azure at all; CD is the only thing that does)
+
+---
+
 ## Design decisions worth their own STAR (no bug, but interview-worthy)
 
 These didn't come from a failure — they're judgment calls made deliberately, which interviewers value just as much as debugging stories.
