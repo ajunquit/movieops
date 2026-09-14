@@ -27,6 +27,13 @@ resource "azurerm_kubernetes_cluster" "main" {
   oms_agent {
     log_analytics_workspace_id = var.log_analytics_workspace_id
   }
+
+  # Azure's managed NGINX ingress controller. dns_zone_ids = [] means: no
+  # custom domain, just the default nip.io-style hostname — enough to
+  # exercise Ingress as a concept without provisioning Azure DNS.
+  web_app_routing {
+    dns_zone_ids = []
+  }
 }
 
 # Lets AKS pull images from ACR without imagePullSecrets.

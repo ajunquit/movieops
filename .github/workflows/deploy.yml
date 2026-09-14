@@ -48,7 +48,10 @@ jobs:
           sudo mv kustomize /usr/local/bin/kustomize
 
       - name: Get AKS credentials
-        run: az aks get-credentials --resource-group "$RESOURCE_GROUP" --name "$CLUSTER_NAME" --overwrite-existing
+        run: |
+          az aks get-credentials --resource-group "$RESOURCE_GROUP" --name "$CLUSTER_NAME" --overwrite-existing
+          kubectl create namespace movieops --dry-run=client -o yaml | kubectl apply -f -
+          kubectl config set-context --current --namespace=movieops
 
       - name: Promote image from GHCR into this environment's ACR (no rebuild)
         id: acr
@@ -92,10 +95,19 @@ jobs:
         id: smoke
         if: steps.rollout.outcome == 'success'
         run: |
-          EXTERNAL_IP=$(kubectl get service frontend -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          for i in $(seq 1 30); do
+            EXTERNAL_IP=$(kubectl get ingress movieops -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+            [ -n "$EXTERNAL_IP" ] && break
+            sleep 5
+          done
+          if [ -z "$EXTERNAL_IP" ]; then
+            echo "::error::Ingress never got an external IP."
+            exit 1
+          fi
+
           for i in $(seq 1 15); do
             if curl -sf "http://$EXTERNAL_IP/api/movies" > /dev/null; then
-              echo "Smoke test passed."
+              echo "Smoke test passed (frontend at http://$EXTERNAL_IP/, API at http://$EXTERNAL_IP/api)."
               exit 0
             fi
             sleep 5

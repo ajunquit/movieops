@@ -104,6 +104,20 @@ Format: **Situation** (context) → **Task** (what needed to happen) → **Actio
 
 ---
 
+## Sprint 9 — letting the HPA actually own replicas, instead of fighting it
+
+**Situation:** Adding a `HorizontalPodAutoscaler` for the backend (`minReplicas: 2, maxReplicas: 4`, target 70% CPU) on top of the Sprint 8 Deployment, which had a static `replicas: 1`.
+
+**Task:** Avoid the classic HPA footgun — leaving a static `replicas:` field on the Deployment while an HPA also manages it. `kubectl apply` re-asserts whatever the manifest says on every deploy, HPA changes it in response to load, and the two fight: every CD run would silently reset the replica count back down, undoing whatever the HPA had scaled to.
+
+**Action:** Removed the `replicas:` field from the backend Deployment entirely — Kubernetes defaults to 1 on first creation, and the HPA takes ownership from its first reconciliation loop onward, immediately scaling to its `minReplicas: 2`. The frontend, which has no HPA, keeps an explicit static `replicas: 2`.
+
+**Result:** No two sources of truth for the same field. This is also why `frontend`'s rolling update (`maxSurge: 1, maxUnavailable: 0`) is meaningfully different from `backend`'s: frontend's replica count is fixed by the manifest, backend's is fixed by the HPA — same rollout strategy, different reason each stays correct over time.
+
+**Answers:** ¿Qué aporta HPA? · Común error de producción real (HPA vs. GitOps/CD reconciliación fighting over the same field) — buena para "¿qué problema evitaste antes de que pasara?"
+
+---
+
 ## Design decisions worth their own STAR (no bug, but interview-worthy)
 
 These didn't come from a failure — they're judgment calls made deliberately, which interviewers value just as much as debugging stories.

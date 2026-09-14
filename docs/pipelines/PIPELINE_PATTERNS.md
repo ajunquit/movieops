@@ -30,7 +30,7 @@ Tracks which patterns from [MovieOps_DevOps_Plan.md](../../MovieOps_DevOps_Plan.
 | Pattern | Status | Where |
 |---|---|---|
 | Git as Source of Truth | 🔜 | Sprint 10-11 (Argo CD) |
-| Declarative Deployment | 🔜 | Sprint 9 (Kubernetes manifests) |
+| Declarative Deployment | 🟡 | `k8s/base/` manifests exist and are declarative (Deployment/Service/Ingress/HPA/ConfigMap) — but applied push-based via `kubectl apply` in CD, not pulled/reconciled by Argo CD yet (Sprint 10) |
 | Pull-based Deployment | 🔜 | Sprint 10 |
 | Continuous Reconciliation | 🔜 | Sprint 10 |
 | Drift Detection | 🔜 | Sprint 10 |
@@ -45,6 +45,8 @@ Tracks which patterns from [MovieOps_DevOps_Plan.md](../../MovieOps_DevOps_Plan.
 - **Integration tests run in CI**, not just locally — GitHub-hosted `ubuntu-latest` runners have Docker preinstalled, so Testcontainers-based tests (Sprint 4) work unmodified.
 - **Terraform gets its own pipeline, not a CD stage.** Per plan section 26/40: Terraform provisions the "field" (cluster, network, DB, registry), CD/Argo CD later deploys the "players" (the app) onto it. Mixing them means every app deploy would re-evaluate infrastructure. `terraform.yml` will trigger only on changes under `terraform/**`, and gate `apply` behind a manual approval (GitHub Environment protection) since it's real cost and real infra, unlike `ci.yml`'s Docker builds.
 - **ACR now exists for real** (Sprint 7, dev environment) — GHCR remains the CI registry for now (ADR-0001); the app's CD pipeline (Sprint 8+) is what will actually push to ACR for deployment onto AKS.
-- **Sprint 8 (CD) is code-complete but not yet run live.** Building it required re-provisioning AKS + Postgres (destroyed at the end of Sprint 7 to stop billing), so live validation is deliberately batched together with Sprint 9's Kubernetes work into one apply → validate-both → destroy pass, instead of two separate cost cycles.
-- **No `Namespace` yet** — everything deploys to `default`. Introducing namespaces properly (one per environment sharing a cluster, vs. one cluster per environment as we have now) is a Sprint 9 concept, not bolted on early.
+- **Sprint 8+9 (CD + Kubernetes) are code-complete but not yet run live.** Building them required re-provisioning AKS + Postgres (destroyed at the end of Sprint 7 to stop billing), so live validation is deliberately batched into one apply → validate-both → destroy pass, instead of separate cost cycles per sprint.
 - **Secrets are created imperatively by `deploy.yml`** (`kubectl create secret ... --dry-run=client -o yaml | kubectl apply -f -`) from GitHub Secrets — never as a committed manifest. Continues the `.env` → GitHub Secrets → Key Vault → **Kubernetes Secrets** chain from plan section 11.
+- **Ingress via Azure's managed `web_app_routing` addon**, not a hand-installed ingress-nginx Helm chart — same underlying NGINX, zero extra Terraform/Helm plumbing. `dns_zone_ids = []` means no custom domain, just the addon's default hostname.
+- **HPA owns `backend`'s replica count** (`minReplicas: 2`) — the Deployment manifest deliberately has no `replicas:` field, since setting one would fight the HPA on every `kubectl apply`. `frontend` has no HPA, so it keeps a static `replicas: 2`.
+- **`maxUnavailable: 0, maxSurge: 1`** on both Deployments: a real zero-downtime rolling update, not just the strategy's default.

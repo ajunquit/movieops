@@ -5,6 +5,7 @@ resources:
   - deployment.yaml
   - service.yaml
   - configmap.yaml
+  - hpa.yaml
 
 # backend-secrets (ConnectionStrings__Default, Tmdb__ApiKey) is intentionally NOT
 # here — it is created imperatively by the CD pipeline from GitHub Secrets, so no
