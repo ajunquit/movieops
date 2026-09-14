@@ -1,0 +1,20 @@
+name: CD - Dev
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy, e.g. sha-abc1234 (from a green ci.yml run on main)"
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy.yml
+    permissions:
+      id-token: write
+      contents: read
+    with:
+      environment: dev
+      image_tag: ${{ inputs.image_tag }}
+    secrets: inherit
