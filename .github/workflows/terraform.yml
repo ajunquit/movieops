@@ -1,0 +1,79 @@
+name: Terraform (Plan & Apply)
+
+# The infrastructure lifecycle pipeline — separate from ci.yml and deploy.yml
+# on purpose (see docs/pipelines/PIPELINE_PATTERNS.md: Terraform provisions
+# the "field", CD deploys the "players" onto it). Manual only: infra changes
+# are rare, slow, and costly compared to app deploys, so there's no
+# push/schedule trigger here.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to plan/apply'
+        type: choice
+        options: [dev, staging, production]
+        required: true
+      action:
+        description: "'plan' only shows what would change; 'apply' actually does it"
+        type: choice
+        options: [plan, apply]
+        default: plan
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  terraform:
+    name: Terraform ${{ inputs.action }} — ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    defaults:
+      run:
+        working-directory: terraform/environments/azure/${{ inputs.environment }}
+    env:
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_USE_OIDC: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check this environment has a Terraform config
+        id: check
+        run: |
+          if [ ! -f main.tf ]; then
+            echo "::error::terraform/environments/azure/${{ inputs.environment }} has no Terraform config yet."
+            exit 1
+          fi
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.9.8'
+
+      # Fail Fast: cheap checks before anything that touches Azure.
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive ../../../
+
+      - name: Terraform init
+        run: terraform init
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Checkov (IaC security scan)
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: terraform/
+          quiet: true
+          soft_fail: true # informational for this lab; flip to false to hard-block on findings
+
+      - name: Terraform plan
+        run: terraform plan -out=tfplan
+
+      # Everything above runs for 'plan' too, so a PR-style review can happen
+      # without ever touching real infrastructure.
+      - name: Terraform apply
+        if: inputs.action == 'apply'
+        run: terraform apply -auto-approve tfplan
