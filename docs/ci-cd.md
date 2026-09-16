@@ -182,9 +182,16 @@ workflow_dispatch
    → terraform init
    → terraform plan -destroy
    → terraform apply destroy.tfplan
+   → verificar que rg-movieops-<ambiente> ya no existe
 ```
 
-Destruye `rg-movieops-dev` y sus recursos facturables. No destruye:
+Cada ambiente usa un Resource Group desechable y exclusivo. El provider permite
+que Azure elimine en cascada recursos auxiliares que un servicio administrado
+haya creado fuera del state de Terraform —por ejemplo, una solución
+`ContainerInsights(...)`— y el workflow consulta Azure al final. El job solo
+termina verde si `rg-movieops-<ambiente>` dejó de existir por completo.
+
+No destruye:
 
 - El repositorio, workflows o imágenes de GHCR.
 - La App Registration y sus credenciales OIDC de bootstrap.

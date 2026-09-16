@@ -692,6 +692,95 @@ El smoke test también quedó acotado y observable:
 
 ---
 
+<a name="ts-12"></a>
+## TS-12 — Apocalipsis eliminó la infraestructura, pero dejó el Resource Group
+
+**Sprint 9 · Terraform / AzureRM / destrucción controlada**
+
+### Síntoma
+
+`apocalipsis.yml` avanzó durante varios minutos y eliminó los recursos
+administrados, pero falló al destruir `rg-movieops-dev`:
+
+```text
+Error: deleting Resource Group "rg-movieops-dev":
+the Resource Group still contains Resources.
+
+Microsoft.OperationsManagement/solutions/
+ContainerInsights(log-movieops-dev)
+```
+
+En el portal, ese `ContainerInsights(...)` era el único recurso restante.
+
+### Impacto
+
+La mayor parte del ambiente dejó de existir, pero el workflow quedó rojo y el
+Resource Group no cumplió el contrato operativo de Apocalipsis: eliminar el
+ambiente completo sin afectar el backend remoto del state.
+
+### Evidencia
+
+Una versión anterior del módulo AKS habilitaba `oms_agent`, que hizo que Azure
+creara una solución `Microsoft.OperationsManagement/solutions`. Después se
+retiró el addon para respetar la estrategia portable de observabilidad, pero la
+solución auxiliar permaneció y nunca formó parte del state como recurso
+Terraform independiente.
+
+Además, el provider estaba usando su configuración predeterminada:
+
+```hcl
+provider "azurerm" {
+  features {}
+}
+```
+
+En AzureRM 4.x, `resource_group.prevent_deletion_if_contains_resources` vale
+`true` por defecto. La protección detectó correctamente el recurso no
+administrado y bloqueó la eliminación del grupo.
+
+### Root Cause
+
+El contrato del Resource Group y el comportamiento del provider no estaban
+alineados. `rg-movieops-dev` es deliberadamente desechable y exclusivo del
+ambiente, pero Terraform estaba configurado para preservar cualquier Resource
+Group que contuviera incluso un recurso auxiliar fuera del state.
+
+### Solución
+
+El provider permite ahora la eliminación en cascada del Resource Group:
+
+```hcl
+provider "azurerm" {
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+  }
+}
+```
+
+Esto no pone en riesgo `rg-movieops-tfstate`: el backend vive en otro Resource
+Group, no está declarado en la configuración del ambiente y, por tanto, nunca
+es el target del recurso `azurerm_resource_group.main`.
+
+`apocalipsis.yml` también inicia sesión en Azure CLI mediante OIDC y verifica
+después del apply que `rg-movieops-<ambiente>` ya no exista. La verificación
+tiene reintentos acotados para tolerar la eliminación asíncrona de Azure; si el
+grupo sobrevive, muestra sus recursos residuales y mantiene el job en rojo.
+
+### Acción preventiva
+
+1. Un Resource Group eliminable en cascada debe contener exclusivamente
+   recursos del mismo ambiente y propósito.
+2. Los backends de state y otros recursos persistentes deben vivir en grupos
+   separados.
+3. Un destroy no se considera exitoso solo porque `terraform apply` terminó:
+   debe comprobarse la ausencia del boundary que representa el ambiente.
+4. Todo recurso implícito creado por addons administrados debe evaluarse al
+   habilitar y al retirar el addon.
+
+---
+
 <a name="gotchas"></a>
 ## Gotchas de herramientas y entorno
 
@@ -708,17 +797,17 @@ Fallos menores, de causa evidente una vez vistos, pero que cuestan tiempo la pri
 | G-07 | `az`: `Can't find token from MSAL cache` después de actualizar el CLI | El formato de caché de tokens cambió entre versiones mayores | `az login --use-device-code` |
 | G-08 | Terraform: constraint `>= 1.9` con 1.5.3 instalado | El binario local estaba desactualizado | Se bajó el constraint a `>= 1.5` (no usamos features nuevas). Alternativa: actualizar el binario |
 | G-09 | Warning: `enable_rbac_authorization` deprecado en Key Vault | Renombrado en el provider azurerm 4.x | `rbac_authorization_enabled` |
-| G-10 | Tras `terraform destroy` queda un recurso `ContainerInsights(...)` huérfano | El addon `oms_agent` de AKS crea un *Solution* que Terraform no gestiona directamente | Se borra al eliminar el resource group (que es lo que hace el destroy completo) |
+| G-10 | Tras `terraform destroy` queda un recurso `ContainerInsights(...)` huérfano | El addon `oms_agent` de AKS creó un *Solution* fuera del state y la protección predeterminada impidió borrar el Resource Group | Permitir cascade delete solo para el grupo desechable del ambiente y verificar su ausencia; ver TS-12 |
 | G-11 | El cliente de base de datos no conecta a `localhost:5432` con el stack levantado | Postgres no publicaba puerto al host: el backend le habla por la red interna de Docker | Agregado `ports: ["5432:5432"]` en `docker-compose.yml` (solo para inspección local) |
 
 ---
 
 ## Patrones que se repiten
 
-Mirando los 11 casos profundos juntos, tres causas raíz aparecen una y otra vez:
+Mirando los 12 casos profundos juntos, tres causas raíz aparecen una y otra vez:
 
 1. **Algo implícito chocando con algo explícito** (TS-04 service CIDR, TS-06 working-directory, TS-08 formato OIDC, TS-11 reglas default del NSG). Los defaults se eligieron sin conocer tu configuración.
 2. **Resolución de nombres / red donde nadie miraba** (TS-01 IPv6, TS-02 puerto secuestrado, TS-05 combinación de URIs). El código estaba bien; el tráfico iba a otro lado.
 3. **Estado capturado demasiado temprano** (TS-03 config eager, TS-07 rama apuntando a un commit viejo). El valor era correcto cuando se leyó, y quedó obsoleto después.
 
-Y una lección transversal: **en los 11 casos, el diagnóstico salió de una evidencia concreta** (un log con la URL real, un `Get-NetTCPConnection`, un `git diff`, las reglas efectivas de Azure), no de razonar sobre el código. Reproducir y observar primero; teorizar después.
+Y una lección transversal: **en los 12 casos, el diagnóstico salió de una evidencia concreta** (un log con la URL real, un `Get-NetTCPConnection`, un `git diff`, las reglas efectivas de Azure), no de razonar sobre el código. Reproducir y observar primero; teorizar después.

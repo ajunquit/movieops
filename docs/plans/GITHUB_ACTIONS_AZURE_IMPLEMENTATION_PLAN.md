@@ -372,6 +372,7 @@ se enmascaran antes de construir la connection string.
 | TS-09 | Contributor no puede crear role assignments |
 | TS-10 | Management plane no equivale al data plane de Key Vault |
 | TS-11 | Health probes del Load Balancer no prueban tráfico real del cliente |
+| TS-12 | Un recurso auxiliar fuera del state puede bloquear el destroy del Resource Group |
 
 Detalle completo: [`docs/troubleshooting.md`](../troubleshooting.md).
 
@@ -432,4 +433,3 @@ integraciones.
 - [Patrones de pipeline](../pipelines/PIPELINE_PATTERNS.md)
 - [Troubleshooting](../troubleshooting.md)
 - [Notas para entrevistas](../interview-notes.md)
-

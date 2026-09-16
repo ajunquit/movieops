@@ -85,6 +85,10 @@ curl http://$IP/api/movies  # backend, via el mismo Ingress
 
 GitHub → **Actions** → **Apocalipsis (Destroy Infrastructure)** → `environment: dev`, `confirm: dev`.
 
+El run solo termina correctamente cuando Azure confirma que
+`rg-movieops-dev` ya no existe. El backend remoto `rg-movieops-tfstate` se
+conserva porque vive en un Resource Group separado y no pertenece al ambiente.
+
 ---
 
 ## Resumen visual

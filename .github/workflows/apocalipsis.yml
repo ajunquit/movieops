@@ -61,6 +61,17 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # Terraform authenticates directly through the ARM_* OIDC variables.
+      # Azure CLI gets its own federated session so the final assertion can
+      # prove that the environment resource group no longer exists.
+      - name: Azure login for post-destroy verification
+        if: steps.check.outputs.skip == 'false'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
       - name: Terraform init
         if: steps.check.outputs.skip == 'false'
         run: terraform init
@@ -72,3 +83,26 @@ jobs:
       - name: Terraform destroy
         if: steps.check.outputs.skip == 'false'
         run: terraform apply -auto-approve destroy.tfplan
+
+      - name: Verify complete environment deletion
+        if: steps.check.outputs.skip == 'false'
+        working-directory: ${{ github.workspace }}
+        run: |
+          resource_group="rg-movieops-${{ inputs.environment }}"
+
+          # Resource Group deletion is asynchronous in Azure. Terraform
+          # normally waits for it, but this bounded poll makes the pipeline's
+          # contract explicit: success means the whole environment is gone.
+          for attempt in {1..30}; do
+            if [ "$(az group exists --name "$resource_group")" = "false" ]; then
+              echo "Resource group '$resource_group' was completely deleted."
+              exit 0
+            fi
+
+            echo "Waiting for '$resource_group' to disappear ($attempt/30)..."
+            sleep 10
+          done
+
+          echo "::error::Resource group '$resource_group' still exists after Terraform destroy."
+          az resource list --resource-group "$resource_group" --output table || true
+          exit 1
