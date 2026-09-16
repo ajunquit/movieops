@@ -91,6 +91,11 @@ Referencia: [Create an organization](https://learn.microsoft.com/en-us/azure/dev
 Ruta recomendada: `bootstrap-project.ps1` lo creará de forma idempotente. La
 siguiente secuencia es el fallback manual y permite verificar el resultado:
 
+```powershell
+./scripts/azure-devops/00-bootstrap-project/bootstrap-project.ps1 -WhatIf
+./scripts/azure-devops/00-bootstrap-project/bootstrap-project.ps1
+```
+
 En la página principal de la organización:
 
 1. Seleccionar **New project**.

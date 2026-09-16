@@ -72,15 +72,13 @@ demostrar.
 ```text
 scripts/
 └── azure-devops/
-    ├── Invoke-Bootstrap.ps1
-    ├── bootstrap-project.ps1
-    ├── configure-service-connection.ps1
-    ├── configure-environments.ps1
-    ├── configure-pipelines.ps1
-    ├── configure-retention.ps1
-    ├── verify-bootstrap.ps1
-    └── lib/
-        └── AzureDevOpsApi.ps1
+    ├── 00-bootstrap-project/
+    ├── 01-service-connection-wif/
+    ├── 02-configure-environments/
+    ├── 03-configure-pipelines/
+    ├── 04-configure-retention/
+    ├── 05-verify-bootstrap/
+    └── 99-full-bootstrap/
 ```
 
 ### `Invoke-Bootstrap.ps1`
@@ -92,7 +90,7 @@ sin duplicar recursos.
 Interfaz prevista:
 
 ```powershell
-./scripts/azure-devops/Invoke-Bootstrap.ps1 `
+./scripts/azure-devops/99-full-bootstrap/Invoke-Bootstrap.ps1 `
   -OrganizationUrl "https://dev.azure.com/<organization>" `
   -ProjectName "MovieOps" `
   -GitHubRepository "ajunquit/movieops" `
@@ -105,7 +103,9 @@ Los IDs de suscripción y tenant pueden descubrirse desde `az account show`,
 pero permanecen como parámetros para hacer explícito el target y evitar operar
 accidentalmente sobre otra suscripción.
 
-### `bootstrap-project.ps1`
+### `00-bootstrap-project/bootstrap-project.ps1`
+
+Estado: **implementado; pendiente de ejecución por el operador**.
 
 - Comprueba Azure CLI y PowerShell.
 - Instala/actualiza la extensión `azure-devops`.
@@ -271,4 +271,3 @@ identidad WIF obtiene únicamente los roles que el script declara.
 - El pipeline de diagnóstico se autentica en Azure mediante WIF y solo realiza
   consultas de lectura.
 - Todo paso manual restante está identificado explícitamente y tiene evidencia.
-

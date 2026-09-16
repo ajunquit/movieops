@@ -210,10 +210,13 @@ azure-pipelines/
 
 scripts/
 └── azure-devops/
-    ├── bootstrap-project.ps1
-    ├── configure-service-connection.ps1
-    ├── configure-environments.ps1
-    └── verify-bootstrap.ps1
+    ├── 00-bootstrap-project/
+    ├── 01-service-connection-wif/
+    ├── 02-configure-environments/
+    ├── 03-configure-pipelines/
+    ├── 04-configure-retention/
+    ├── 05-verify-bootstrap/
+    └── 99-full-bootstrap/
 
 docs/
 └── azure-devops/

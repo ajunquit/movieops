@@ -4,9 +4,21 @@ Automatizaciones locales organizadas por dominio.
 
 ```text
 scripts/
-├── azure/      Operaciones y mantenimiento de recursos/configuración de Azure
-└── test.sh     Ejecución de tests locales del producto
+├── azure/          Operaciones y mantenimiento de recursos/configuración de Azure
+├── azure-devops/   Bootstrap y verificación de Azure DevOps
+└── test.sh         Ejecución de tests locales del producto
 ```
+
+## Azure DevOps
+
+Los pasos están numerados y cada carpeta contiene el script junto con su
+documentación completa. Ver el
+[`índice de bootstrap Azure DevOps`](azure-devops/README.md).
+
+Primer paso disponible:
+
+- [`00-bootstrap-project`](azure-devops/00-bootstrap-project/): crea o verifica
+  el Project privado `MovieOps`.
 
 ## Azure
 
