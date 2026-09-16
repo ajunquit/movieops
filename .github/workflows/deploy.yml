@@ -137,8 +137,31 @@ jobs:
       - name: Automatic rollback on failure
         if: failure() && (steps.rollout.outcome == 'failure' || steps.smoke.outcome == 'failure')
         run: |
-          echo "::warning::Deployment failed health/smoke checks — rolling back."
-          kubectl rollout undo deployment/backend
-          kubectl rollout undo deployment/frontend
-          kubectl rollout status deployment/backend --timeout=120s
-          kubectl rollout status deployment/frontend --timeout=120s
+          echo "::warning::Deployment failed health/smoke checks — attempting rollback."
+
+          # On a first-ever deploy there is no previous revision: `rollout undo`
+          # fails with "no rollout history found". That isn't a rollback failure,
+          # it means there is nothing to roll back TO — say so plainly instead of
+          # masking the original error with a second one.
+          rolled_back=false
+          for d in backend frontend; do
+            revisions=$(kubectl rollout history "deployment/$d" --no-headers 2>/dev/null | wc -l)
+            if [ "$revisions" -gt 1 ]; then
+              kubectl rollout undo "deployment/$d"
+              rolled_back=true
+            else
+              echo "::warning::deployment/$d has no previous revision — first deploy, nothing to roll back to."
+            fi
+          done
+
+          if [ "$rolled_back" = true ]; then
+            kubectl rollout status deployment/backend --timeout=120s
+            kubectl rollout status deployment/frontend --timeout=120s
+            echo "Rolled back to the previous revision."
+          else
+            echo "::error::Nothing to roll back — the environment has no known-good revision. Investigate the failure above before retrying."
+          fi
+
+          # Surface what actually went wrong, whichever path we took.
+          kubectl get pods -o wide
+          kubectl describe deployment/backend | tail -20

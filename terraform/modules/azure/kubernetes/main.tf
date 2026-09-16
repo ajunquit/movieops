@@ -24,9 +24,11 @@ resource "azurerm_kubernetes_cluster" "main" {
     dns_service_ip = "172.16.0.10"
   }
 
-  oms_agent {
-    log_analytics_workspace_id = var.log_analytics_workspace_id
-  }
+  # No oms_agent (Container Insights) on purpose: ADR-0002 commits to portable
+  # observability (OpenTelemetry + self-hosted Prometheus/Grafana), not the
+  # Azure-native agent. It also reserved ~225m of CPU per node and billed Log
+  # Analytics ingestion for logs we had decided not to rely on.
+  # The Log Analytics workspace still exists for control-plane diagnostics.
 
   # Azure's managed NGINX ingress controller. dns_zone_ids = [] means: no
   # custom domain, just the default nip.io-style hostname — enough to
