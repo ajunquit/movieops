@@ -73,10 +73,9 @@ module "postgres" {
 module "kubernetes" {
   source = "../../../modules/azure/kubernetes"
 
-  name                       = "aks-movieops-${var.environment}"
-  location                   = azurerm_resource_group.main.location
-  resource_group_name        = azurerm_resource_group.main.name
-  subnet_id                  = module.network.subnet_id
-  acr_id                     = module.container_registry.id
-  log_analytics_workspace_id = module.monitoring.workspace_id
+  name                = "aks-movieops-${var.environment}"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  subnet_id           = module.network.subnet_id
+  acr_id              = module.container_registry.id
 }

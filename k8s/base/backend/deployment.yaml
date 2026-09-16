@@ -43,15 +43,32 @@ spec:
             limits:
               cpu: 500m
               memory: 384Mi
+          # The container runs EF Core migrations before it starts listening.
+          # A startupProbe holds liveness/readiness off until the app is up, so
+          # a slow migration can't be mistaken for a hung process and restarted.
+          startupProbe:
+            httpGet:
+              path: /health/live
+              port: 8080
+            periodSeconds: 5
+            failureThreshold: 30 # hasta 150s para migrar y arrancar
+            timeoutSeconds: 3
           livenessProbe:
             httpGet:
               path: /health/live
               port: 8080
-            initialDelaySeconds: 10
+              # /health/live has no checks registered — it only proves the
+              # process is answering, so it must never depend on the database.
             periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
           readinessProbe:
             httpGet:
               path: /health/ready
               port: 8080
-            initialDelaySeconds: 10
             periodSeconds: 10
+            # /health/ready opens a real TLS connection to Postgres. The 1s
+            # default timeout makes it flap under CPU pressure even though the
+            # endpoint normally answers in single-digit milliseconds.
+            timeoutSeconds: 5
+            failureThreshold: 3

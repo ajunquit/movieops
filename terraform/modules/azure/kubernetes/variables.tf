@@ -18,14 +18,10 @@ variable "acr_id" {
   type = string
 }
 
-variable "log_analytics_workspace_id" {
-  type = string
-}
-
 variable "node_count" {
-  description = "Cheapest viable node count for a lab cluster"
+  description = "Two nodes minimum: a single B2s cannot fit the managed NGINX ingress controller (1000m) plus the app with headroom for a rolling update surge"
   type        = number
-  default     = 1
+  default     = 2
 }
 
 variable "vm_size" {
