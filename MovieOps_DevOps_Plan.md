@@ -359,6 +359,9 @@ movieops/
 │   └── backend.tf
 │
 ├── scripts/
+│   ├── azure/                 # bootstrap y mantenimiento de Azure
+│   │                          # (permisos, OIDC) — todo lo que se aplique
+│   │                          # a mano sobre un entorno vive acá
 │   ├── build.sh
 │   ├── test.sh
 │   ├── deploy.sh
@@ -452,7 +455,24 @@ Declaración GitOps de aplicaciones y proyectos Argo CD.
 
 ## `scripts/`
 
-Automatización auxiliar con Bash.
+Automatización auxiliar, organizada por dominio (`azure/`, tests, etc.).
+
+**Regla del laboratorio: todo comando que se ejecute contra un entorno real —Azure, el cluster, la base de datos— queda registrado como script acá.**
+
+Un comando que vivió solo en el historial de una terminal **no existe**: no se puede revisar, ni repetir, ni ejecutar por otra persona, ni reconstruir el día que haya que rehacer el entorno desde cero. Aplica sobre todo a dos casos:
+
+1. **Lo que Terraform no puede gestionar por definición** — los permisos y la confianza que Terraform *necesita para poder correr* (por eso no puede gestionarlos él mismo), igual que el Storage Account del state remoto.
+2. **Los arreglos aplicados en caliente mientras se diagnostica un fallo** — que son justamente los que más se olvidan, porque en el momento lo único que importa es destrabar el problema.
+
+Cada fallo documentado en `docs/troubleshooting.md` cuya solución haya sido un comando manual debe terminar apuntando a un script de esta carpeta.
+
+Convenciones:
+
+- **Idempotentes**: correrlos dos veces no rompe nada ni duplica recursos.
+- **Con vista previa** (`-WhatIf` / `--dry-run`) antes de aplicar cambios.
+- **Con verificación final** del estado resultante.
+- **Parametrizados**, para poder reutilizarlos en otro ambiente o suscripción.
+- **Documentados** en `scripts/README.md`: qué hacen, prerrequisitos y por qué existen.
 
 ## `docs/`
 
@@ -2599,6 +2619,7 @@ Checklist final:
 11. **Todo sistema debe poder fallar de forma controlada.**
 12. **Cada incidente debe convertirse en aprendizaje documentado.**
 13. **Cada patrón debe poder explicarse en una entrevista.**
+14. **Ningún comando aplicado a un entorno real vive solo en una terminal.** Si se ejecutó contra Azure, el cluster o la base de datos, queda como script en `scripts/` — idempotente, con vista previa y verificación. Lo que no está scripteado, no es reproducible; y lo que no es reproducible, no es infraestructura: es suerte.
 
 ---
 
