@@ -2251,6 +2251,32 @@ Objetivos:
 
 ---
 
+## Track complementario — Paridad CI/CD con Azure DevOps y expansión AWS
+
+Después de validar el Sprint 9 y antes de introducir Argo CD, el laboratorio
+abre dos tracks secuenciales de expansión sin alterar los objetivos ni la
+numeración del plan rector:
+
+La implementación que materializó los Sprints 6–9 con GitHub Actions está
+registrada en
+[`docs/plans/GITHUB_ACTIONS_AZURE_IMPLEMENTATION_PLAN.md`](docs/plans/GITHUB_ACTIONS_AZURE_IMPLEMENTATION_PLAN.md)
+y funciona como baseline verificable.
+
+1. **Azure DevOps parity:** reproducir CI, Terraform, CD push-based y destroy
+   con Azure Pipelines, manteniendo GitHub como repositorio.
+2. **AWS parity:** reimplementar la infraestructura y el despliegue equivalentes
+   en AWS, conservando la aplicación y los patrones ya validados.
+
+El primer track está especificado en
+[`docs/plans/AZURE_DEVOPS_PARITY_PLAN.md`](docs/plans/AZURE_DEVOPS_PARITY_PLAN.md).
+El plan AWS se escribirá al cerrar la matriz de paridad Azure DevOps, usando sus
+resultados como baseline y sin anticipar abstracciones multi-cloud.
+
+Estos tracks no incluyen todavía Argo CD, Argo Rollouts ni observabilidad; al
+terminarlos se retoma el Sprint 10 exactamente desde este roadmap.
+
+---
+
 ## Sprint 10 — Argo CD en DEV
 
 Objetivos:
@@ -2655,6 +2681,12 @@ CD tradicional + patrones
         ↓
 SPRINT 9
 Kubernetes
+        ↓
+TRACK COMPLEMENTARIO A
+Azure DevOps CI/CD parity
+        ↓
+TRACK COMPLEMENTARIO B
+AWS infrastructure + delivery parity
         ↓
 SPRINT 10
 Argo CD DEV

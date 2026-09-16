@@ -207,10 +207,16 @@ Argo CD añadirá reconciliación continua y detección/corrección de drift. No
 reemplazará el CI ni Terraform: CI seguirá construyendo artefactos y Terraform
 seguirá creando la infraestructura.
 
+Antes de iniciar esa evolución, el mismo hito se reproducirá con Azure
+Pipelines para comparar dos plataformas CI/CD sobre el mismo repositorio y
+destino cloud. Ver el
+[plan de paridad Azure DevOps](plans/AZURE_DEVOPS_PARITY_PLAN.md).
+
 ## Documentos relacionados
 
+- [Planes de implementación](plans/README.md)
+- [Baseline GitHub Actions + Azure](plans/GITHUB_ACTIONS_AZURE_IMPLEMENTATION_PLAN.md)
 - [Runbook operativo](deployment.md)
 - [Patrones de pipeline](pipelines/PIPELINE_PATTERNS.md)
 - [OIDC entre GitHub y Azure](adr/0004-github-actions-azure-oidc.md)
 - [Troubleshooting real](troubleshooting.md)
-
