@@ -486,13 +486,12 @@ Nuestro Terraform necesita justamente eso, en dos lugares legítimos:
 El service principal de CI tenía permisos para **crear infraestructura** pero no para **otorgar acceso** — dos planos de permisos distintos en Azure (control plane de recursos vs. control plane de autorización) que suelen confundirse como uno solo.
 
 ### Solución
-Se agregó el rol **`Role Based Access Control Administrator`**, que es el mínimo privilegio para esto:
+Se agregó el rol **`Role Based Access Control Administrator`**, que es el mínimo privilegio para esto. El fix está scripteado e idempotente en
+[`scripts/azure/grant-ci-subscription-roles.ps1`](../scripts/azure/grant-ci-subscription-roles.ps1):
 
 ```powershell
-az role assignment create `
-  --assignee <appId> `
-  --role "Role Based Access Control Administrator" `
-  --scope "/subscriptions/<subscriptionId>"
+./scripts/azure/grant-ci-subscription-roles.ps1 -WhatIf   # previsualizar
+./scripts/azure/grant-ci-subscription-roles.ps1           # aplicar y verificar
 ```
 
 Por qué ese rol y no otro:
@@ -509,8 +508,9 @@ Como los otros 15 recursos ya estaban en el state, el siguiente `apply` solo tuv
 
 ### Acción preventiva
 1. **Si tu Terraform contiene algún `azurerm_role_assignment`, el principal que lo ejecuta necesita RBAC Administrator, no alcanza Contributor.** Es el error más común al automatizar Azure con CI.
-2. **Leer el código HTTP antes que el mensaje:** 401 = identidad no válida (revisar OIDC, TS-08); 403 = identidad válida, permiso faltante (revisar roles). Diagnósticos completamente distintos.
-3. **Pendiente de endurecer:** un principal que puede escribir role assignments a nivel suscripción puede auto-asignarse Owner. El endurecimiento profesional es agregar una *condition* al role assignment que restrinja **qué roles** puede asignar (solo `AcrPull` y `Key Vault Secrets Officer`). Aceptable en este lab; no lo sería en producción.
+2. **Todo fix aplicado a mano sobre Azure queda scripteado en [`scripts/azure/`](../scripts/README.md).** Este se resolvió originalmente con un `az role assignment create` suelto desde una terminal: funcionó, pero no dejó rastro reproducible. Si mañana hay que rehacer la suscripción desde cero, un comando que vivió solo en el historial de una shell no existe.
+3. **Leer el código HTTP antes que el mensaje:** 401 = identidad no válida (revisar OIDC, TS-08); 403 = identidad válida, permiso faltante (revisar roles). Diagnósticos completamente distintos.
+4. **Pendiente de endurecer:** un principal que puede escribir role assignments a nivel suscripción puede auto-asignarse Owner. El endurecimiento profesional es agregar una *condition* al role assignment que restrinja **qué roles** puede asignar (solo `AcrPull` y `Key Vault Secrets Officer`). Aceptable en este lab; no lo sería en producción.
 
 ---
 
