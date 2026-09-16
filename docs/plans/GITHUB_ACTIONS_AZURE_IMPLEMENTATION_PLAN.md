@@ -279,7 +279,7 @@ Entregables:
 
 Evidencia: `terraform init/plan/apply` autenticados mediante OIDC.
 
-### GH-5 — Genesis y Apocalipsis ✅/🟡
+### GH-5 — Genesis y Apocalipsis ✅
 
 Entregables:
 
@@ -292,8 +292,10 @@ Entregables:
 Estado:
 
 - Genesis fue validado creando y actualizando `dev`.
-- Apocalipsis está implementado y forma parte del ciclo operativo; cada run debe
-  confirmar que desaparece `rg-movieops-dev` y permanece `rg-movieops-tfstate`.
+- Apocalipsis eliminó `rg-movieops-dev`, incluidos recursos auxiliares fuera del
+  state, y verificó su ausencia en el run
+  [35158781637](https://github.com/ajunquit/movieops/actions/runs/35158781637).
+- `rg-movieops-tfstate` permaneció fuera del boundary de destrucción.
 
 ### GH-6 — CD tradicional y promoción de artefacto ✅
 
@@ -391,7 +393,7 @@ Detalle completo: [`docs/troubleshooting.md`](../troubleshooting.md).
 | Key Vault→Kubernetes Secret | ✅ | Deploy exitoso |
 | AKS rollouts sanos | ✅ | backend/frontend `2/2` |
 | Ingress + smoke HTTP | ✅ | frontend/API HTTP 200 |
-| Destroy controlado | 🟡 | Workflow implementado; verificar cada run |
+| Destroy controlado | ✅ | Run 35158781637: RG del ambiente ausente; state conservado |
 | Rollback con revisión previa | 🟡 | Código implementado; prueba deliberada pendiente |
 | STAGING/PRODUCTION | 🔜 | Entradas CD existen; Terraform no implementado |
 | GitOps/Argo CD | 🔜 | Sprint 10 del plan rector |

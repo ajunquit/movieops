@@ -2,8 +2,10 @@
 
 ## Estado
 
-Propuesto. Se ejecuta **después del Sprint 9 validado en Azure y antes del
-Sprint 10 (Argo CD)**.
+En ejecución. **ADOP-0 está completado y ADOP-1 es el siguiente hito**, después
+del Sprint 9 validado en Azure y antes del Sprint 10 (Argo CD). La baseline y
+matriz operativa están en
+[`docs/azure-devops/parity-matrix.md`](../azure-devops/parity-matrix.md).
 
 Este plan es complementario. El documento rector continúa siendo
 [`MovieOps_DevOps_Plan.md`](../../MovieOps_DevOps_Plan.md); no se renumeran ni
@@ -13,6 +15,12 @@ La capacidad que debe reproducirse está inventariada en
 [`GITHUB_ACTIONS_AZURE_IMPLEMENTATION_PLAN.md`](GITHUB_ACTIONS_AZURE_IMPLEMENTATION_PLAN.md).
 Ese documento es la baseline funcional; esta paridad no se evaluará contra
 suposiciones ni contra objetivos todavía no implementados.
+
+La secuencia operativa pantalla por pantalla está en
+[`docs/azure-devops/setup.md`](../azure-devops/setup.md).
+La estrategia predeterminada de bootstrap automatizado, sus límites e
+idempotencia están en
+[`docs/azure-devops/automation.md`](../azure-devops/automation.md).
 
 ## Objetivo
 
@@ -220,7 +228,7 @@ separación entre pipelines principales y templates reutilizables es obligatoria
 
 ## Roadmap del track Azure DevOps
 
-### ADOP-0 — Baseline y matriz de paridad
+### ADOP-0 — Baseline y matriz de paridad ✅
 
 Objetivo: congelar qué significa “llegar al mismo punto”.
 
@@ -237,7 +245,13 @@ Criterio de salida:
 - La matriz de paridad está versionada y no contiene requisitos de Argo CD,
   AWS u observabilidad futura.
 
-### ADOP-1 — Bootstrap seguro de Azure DevOps
+Estado final: workflows, triggers, tiempos, resultados, nombres y retención
+están registrados en
+[`docs/azure-devops/parity-matrix.md`](../azure-devops/parity-matrix.md). La
+organización `https://dev.azure.com/ajunquit` fue confirmada mediante Azure
+DevOps CLI.
+
+### ADOP-1 — Bootstrap seguro de Azure DevOps 🟡
 
 Objetivo: conectar Azure DevOps con GitHub y Azure sin secretos persistentes.
 
@@ -251,6 +265,8 @@ Entregables:
 - Branch control para aceptar despliegues desde `refs/heads/main`.
 - Scripts idempotentes de bootstrap y verificación.
 - Documento de pasos que deban permanecer manuales por consentimiento/UI.
+- Orquestador reanudable que se detiene en el consentimiento GitHub App y
+  continúa sin duplicar recursos.
 
 Criterio de salida:
 

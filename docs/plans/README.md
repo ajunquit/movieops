@@ -10,7 +10,7 @@ producto ni los principios generales del laboratorio.
 |---:|---|---|---|
 | 1 | [Plan rector](../../MovieOps_DevOps_Plan.md) | Activo | Define producto, patrones, arquitectura objetivo y Sprints 0–13 |
 | 2 | [GitHub Actions + Azure](GITHUB_ACTIONS_AZURE_IMPLEMENTATION_PLAN.md) | Baseline `dev` validada | Documenta cómo se implementaron CI, Terraform, CD y AKS hasta Sprint 9 |
-| 3 | [Azure DevOps parity](AZURE_DEVOPS_PARITY_PLAN.md) | Propuesto | Reproduce la baseline con Azure Pipelines y el mismo repositorio GitHub |
+| 3 | [Azure DevOps parity](AZURE_DEVOPS_PARITY_PLAN.md) | En ejecución (ADOP-1) | Reproduce la baseline con Azure Pipelines y el mismo repositorio GitHub |
 | 4 | AWS parity | Pendiente de redactar | Reimplementará infraestructura y delivery en AWS después de cerrar Azure DevOps |
 | 5 | Retorno al plan rector | Futuro | Retoma Sprint 10: Argo CD, Rollouts, observabilidad e incidentes |
 
@@ -35,4 +35,3 @@ Plan rector: Sprints 0–9
           └── Plan rector: Sprints 10–13
               Argo CD → Argo Rollouts → Observabilidad/Incidentes
 ```
-
