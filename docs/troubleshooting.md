@@ -23,6 +23,7 @@ Formato de cada entrada: el de la sección 46 del plan — Síntoma, Impacto, Hi
 - [TS-06 — El workflow no podía ni arrancar: working-directory antes del checkout](#ts-06)
 - [TS-07 — El contenido del Sprint 9 desapareció de main después de mergear](#ts-07)
 - [TS-08 — Entra ID rechazaba el sujeto OIDC inmutable del repositorio](#ts-08)
+- [TS-09 — Contributor no alcanza: 403 al crear role assignments](#ts-09)
 
 **Gotchas de herramientas y entorno** → [ver tabla al final](#gotchas)
 
@@ -433,6 +434,83 @@ y vuelve a leerlas para verificar el resultado. Puede previsualizarse con
    criptográfico entre `dev`, `staging` y `production`.
 4. Ante `AADSTS700213`, comparar primero los tres valores exactos del token
    (`issuer`, `subject`, `audience`) contra la credencial de Entra ID.
+
+---
+
+<a name="ts-09"></a>
+## TS-09 — Contributor no alcanza: 403 al crear role assignments
+
+**Sprint 9 · Terraform / Azure RBAC**
+
+### Síntoma
+Con el OIDC ya resuelto (TS-08), `genesis.yml` llegó hasta `terraform apply`, creó **15 de 17 recursos** (VNet, AKS, ACR, Key Vault, Postgres con su base y su firewall rule) y falló solo en los últimos dos:
+
+```text
+Error: unexpected status 403 (403 Forbidden) with error: AuthorizationFailed:
+The client '***' with object id '36edcd2d-...' does not have authorization to
+perform action 'Microsoft.Authorization/roleAssignments/write' over scope
+'/subscriptions/***/resourceGroups/rg-movieops-dev/providers/
+Microsoft.ContainerRegistry/registries/acrmovieopsdevcwvc/...'
+
+  with module.kubernetes.azurerm_role_assignment.aks_acr_pull
+  with module.secrets.azurerm_role_assignment.current_user_secrets_officer
+```
+
+### Impacto
+**Alto, y con costo corriendo.** El ambiente quedó a medio crear pero facturando: AKS y Postgres —las dos partes caras— ya estaban levantados. Y funcionalmente el ambiente era inútil: sin `AcrPull`, AKS no puede bajar imágenes del registry; sin `Key Vault Secrets Officer`, Terraform no puede guardar la password de Postgres.
+
+### Hipótesis descartadas
+1. ¿El OIDC volvió a fallar? → **No**: el error es 403 (*autorizado pero sin permiso*), no 401 (*no autenticado*). Ese cambio de código es la pista principal: la identidad se validó bien, lo que faltó fue permiso.
+2. ¿El scope está mal construido en el Terraform? → **No**: el mensaje incluye el scope completo y apunta exactamente al ACR y al Key Vault correctos.
+3. ¿Faltan permisos sobre ACR o Key Vault específicamente? → **No**: el recurso denegado no es el ACR, es `Microsoft.Authorization/roleAssignments` *dentro* de ese scope. Es una acción de RBAC, no de datos.
+
+### Evidencia
+```powershell
+az role assignment list --assignee <appId> --all -o table
+# Role         Scope
+# -----------  ---------------------------------------------------
+# Contributor  /subscriptions/b7fdb48a-...        ← lo único que tenía
+```
+
+### Diagnóstico
+**Contributor puede crear casi cualquier recurso de Azure, pero no puede otorgar permisos.** `Microsoft.Authorization/*/Write` está explícitamente en sus `NotActions`. Es una decisión de diseño de Azure para evitar escalada de privilegios: si Contributor pudiera escribir role assignments, cualquier principal con Contributor podría auto-asignarse Owner.
+
+Nuestro Terraform necesita justamente eso, en dos lugares legítimos:
+
+| Recurso | Por qué necesita crear un role assignment |
+|---|---|
+| `aks_acr_pull` | El `object_id` de la identidad kubelet **solo existe después** de crear el cluster, así que la asignación no puede hacerse a mano de antemano |
+| `current_user_secrets_officer` | El propio Terraform necesita permiso de datos sobre el Key Vault recién creado para escribir la password generada |
+
+### Root Cause
+El service principal de CI tenía permisos para **crear infraestructura** pero no para **otorgar acceso** — dos planos de permisos distintos en Azure (control plane de recursos vs. control plane de autorización) que suelen confundirse como uno solo.
+
+### Solución
+Se agregó el rol **`Role Based Access Control Administrator`**, que es el mínimo privilegio para esto:
+
+```powershell
+az role assignment create `
+  --assignee <appId> `
+  --role "Role Based Access Control Administrator" `
+  --scope "/subscriptions/<subscriptionId>"
+```
+
+Por qué ese rol y no otro:
+
+| Rol | Permisos | Veredicto |
+|---|---|---|
+| `Owner` | `*` — todo | Demasiado amplio |
+| `User Access Administrator` | `Microsoft.Authorization/*` (incluye deny assignments, policy) | Más de lo necesario |
+| **`Role Based Access Control Administrator`** | Solo `roleAssignments/write`, `roleAssignments/delete`, `*/read` | ✅ Exacto |
+
+El `delete` importa: sin él, `apocalipsis.yml` fallaría al intentar destruir esos mismos role assignments.
+
+Como los otros 15 recursos ya estaban en el state, el siguiente `apply` solo tuvo que crear los 2 que faltaban — no rehizo nada (misma propiedad del state que salvó el día en TS-04).
+
+### Acción preventiva
+1. **Si tu Terraform contiene algún `azurerm_role_assignment`, el principal que lo ejecuta necesita RBAC Administrator, no alcanza Contributor.** Es el error más común al automatizar Azure con CI.
+2. **Leer el código HTTP antes que el mensaje:** 401 = identidad no válida (revisar OIDC, TS-08); 403 = identidad válida, permiso faltante (revisar roles). Diagnósticos completamente distintos.
+3. **Pendiente de endurecer:** un principal que puede escribir role assignments a nivel suscripción puede auto-asignarse Owner. El endurecimiento profesional es agregar una *condition* al role assignment que restrinja **qué roles** puede asignar (solo `AcrPull` y `Key Vault Secrets Officer`). Aceptable en este lab; no lo sería en producción.
 
 ---
 
