@@ -118,6 +118,22 @@ Format: **Situation** (context) → **Task** (what needed to happen) → **Actio
 
 ---
 
+## Sprint 7/9 — a workflow that passed every static check and still couldn't start
+
+**Situation:** First real run of `genesis.yml` (create infrastructure). It had passed YAML parsing, and its sibling `apocalipsis.yml` had shipped with the identical structure weeks earlier.
+
+**Task:** Understand why the very first step — a trivial `if [ "$confirm" != "$environment" ]` string comparison, touching nothing — failed instantly.
+
+**Action:** The error wasn't about the comparison at all: `An error occurred trying to start process '/usr/bin/bash' with working directory '.../terraform/environments/azure/dev'. No such file or directory`. Root cause: the job sets `defaults.run.working-directory` to the environment's Terraform folder, which applies to **every** `run:` step — including the confirmation step, which deliberately runs *before* `actions/checkout@v4`. At that moment the runner's workspace is empty, so the directory doesn't exist and bash can't even be launched in it. Fixed by giving that one step an explicit `working-directory: ${{ github.workspace }}`, keeping the fail-fast ordering intact.
+
+**Result:** Then checked every other workflow for the same shape — `apocalipsis.yml` had the identical latent bug and would have failed the same way; `backend-ci.yml`/`frontend-ci.yml` were fine because they start with checkout (and their green CI runs already proved it). Both fixed together.
+
+**The real lesson:** the YAML was *valid*, the syntax check passed, and the logic was correct — the workflow was broken **structurally**, in the ordering between an implicit job-level setting and an explicit step. No amount of linting finds that; only executing it does. It also shows why "we never ran `apocalipsis.yml` because we always destroyed via local Terraform" was a hidden risk: an untested emergency procedure is not a procedure.
+
+**Answers:** ¿Cómo diseñar un pipeline seguro? · ¿Por qué validar en un ambiente real y no solo con linters? · Buena anécdota de "el fallo apareció exactamente donde nadie miraba porque siempre lo salteábamos".
+
+---
+
 ## Design decisions worth their own STAR (no bug, but interview-worthy)
 
 These didn't come from a failure — they're judgment calls made deliberately, which interviewers value just as much as debugging stories.

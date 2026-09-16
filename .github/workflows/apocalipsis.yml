@@ -35,6 +35,10 @@ jobs:
       ARM_USE_OIDC: true
     steps:
       - name: Verify typed confirmation
+        # Runs before checkout on purpose (fail before doing anything), so it
+        # must override the job's working-directory — that path doesn't exist
+        # until the repo is cloned.
+        working-directory: ${{ github.workspace }}
         run: |
           if [ "${{ inputs.confirm }}" != "${{ inputs.environment }}" ]; then
             echo "::error::You typed '${{ inputs.confirm }}', which does not match the selected environment '${{ inputs.environment }}'. Aborting without touching anything."
