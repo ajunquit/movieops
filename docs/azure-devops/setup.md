@@ -118,9 +118,9 @@ Referencia: [Create a project](https://learn.microsoft.com/en-us/azure/devops/or
 
 ### Evidencia de salida
 
-- [ ] `https://dev.azure.com/<organization>/MovieOps` abre correctamente.
-- [ ] El proyecto es privado.
-- [ ] GitHub continúa siendo el único repositorio utilizado.
+- [x] `https://dev.azure.com/ajunquit/MovieOps` abre correctamente.
+- [x] El proyecto es privado, `wellFormed`, `Basic` y `Git`.
+- [x] GitHub continúa siendo el único repositorio utilizado.
 
 ## Paso 3 — Comprobar capacidad de agentes
 

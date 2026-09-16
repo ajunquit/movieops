@@ -105,7 +105,7 @@ accidentalmente sobre otra suscripción.
 
 ### `00-bootstrap-project/bootstrap-project.ps1`
 
-Estado: **implementado; pendiente de ejecución por el operador**.
+Estado: **completado y verificado**.
 
 - Comprueba Azure CLI y PowerShell.
 - Instala/actualiza la extensión `azure-devops`.

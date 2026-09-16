@@ -2,7 +2,15 @@
 
 ## Estado
 
-Implementado y validado estáticamente. Pendiente de ejecución por el operador.
+Completado y verificado contra Azure DevOps.
+
+```text
+Project ID: 8194016c-7872-4a13-b3ea-1db569a17e3f
+State: wellFormed
+Visibility: private
+Process: Basic
+Source control: Git
+```
 
 ## Objetivo
 
@@ -218,4 +226,3 @@ el resumen final. No debería contener secretos.
 
 No continuar automáticamente. Primero se valida esta salida y después se crea
 `01-service-connection-wif`.
-

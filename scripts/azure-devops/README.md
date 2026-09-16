@@ -23,8 +23,8 @@ NN-nombre-del-paso/
 
 | Orden | Carpeta | Propósito | Estado |
 |---:|---|---|---|
-| 00 | [`00-bootstrap-project`](00-bootstrap-project/) | Crear/verificar el Project `MovieOps` | Implementado; pendiente de ejecución |
-| 01 | `01-service-connection-wif` | Identidad, service connection WIF y RBAC | Pendiente |
+| 00 | [`00-bootstrap-project`](00-bootstrap-project/) | Crear/verificar el Project `MovieOps` | Completado |
+| 01 | [`01-service-connection-wif`](01-service-connection-wif/) | Identidad, service connection WIF y RBAC | Implementado; pendiente de ejecución |
 | 02 | `02-configure-environments` | Environments, branch control y approval | Pendiente |
 | 03 | `03-configure-pipelines` | GitHub connection y registro de pipelines | Pendiente |
 | 04 | `04-configure-retention` | Política de retención | Pendiente |
@@ -34,4 +34,3 @@ NN-nombre-del-paso/
 La creación de la organización Azure DevOps y el consentimiento de GitHub App
 permanecen manuales. Ver
 [`docs/azure-devops/automation.md`](../../docs/azure-devops/automation.md).
-
