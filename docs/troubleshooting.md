@@ -24,6 +24,7 @@ Formato de cada entrada: el de la sección 46 del plan — Síntoma, Impacto, Hi
 - [TS-07 — El contenido del Sprint 9 desapareció de main después de mergear](#ts-07)
 - [TS-08 — Entra ID rechazaba el sujeto OIDC inmutable del repositorio](#ts-08)
 - [TS-09 — Contributor no alcanza: 403 al crear role assignments](#ts-09)
+- [TS-10 — Ser Owner de la suscripción no da acceso a los secretos del Key Vault](#ts-10)
 
 **Gotchas de herramientas y entorno** → [ver tabla al final](#gotchas)
 
@@ -486,13 +487,12 @@ Nuestro Terraform necesita justamente eso, en dos lugares legítimos:
 El service principal de CI tenía permisos para **crear infraestructura** pero no para **otorgar acceso** — dos planos de permisos distintos en Azure (control plane de recursos vs. control plane de autorización) que suelen confundirse como uno solo.
 
 ### Solución
-Se agregó el rol **`Role Based Access Control Administrator`**, que es el mínimo privilegio para esto:
+Se agregó el rol **`Role Based Access Control Administrator`**, que es el mínimo privilegio para esto. El fix está scripteado e idempotente en
+[`scripts/azure/grant-ci-subscription-roles.ps1`](../scripts/azure/grant-ci-subscription-roles.ps1):
 
 ```powershell
-az role assignment create `
-  --assignee <appId> `
-  --role "Role Based Access Control Administrator" `
-  --scope "/subscriptions/<subscriptionId>"
+./scripts/azure/grant-ci-subscription-roles.ps1 -WhatIf   # previsualizar
+./scripts/azure/grant-ci-subscription-roles.ps1           # aplicar y verificar
 ```
 
 Por qué ese rol y no otro:
@@ -509,8 +509,71 @@ Como los otros 15 recursos ya estaban en el state, el siguiente `apply` solo tuv
 
 ### Acción preventiva
 1. **Si tu Terraform contiene algún `azurerm_role_assignment`, el principal que lo ejecuta necesita RBAC Administrator, no alcanza Contributor.** Es el error más común al automatizar Azure con CI.
-2. **Leer el código HTTP antes que el mensaje:** 401 = identidad no válida (revisar OIDC, TS-08); 403 = identidad válida, permiso faltante (revisar roles). Diagnósticos completamente distintos.
-3. **Pendiente de endurecer:** un principal que puede escribir role assignments a nivel suscripción puede auto-asignarse Owner. El endurecimiento profesional es agregar una *condition* al role assignment que restrinja **qué roles** puede asignar (solo `AcrPull` y `Key Vault Secrets Officer`). Aceptable en este lab; no lo sería en producción.
+2. **Todo fix aplicado a mano sobre Azure queda scripteado en [`scripts/azure/`](../scripts/README.md).** Este se resolvió originalmente con un `az role assignment create` suelto desde una terminal: funcionó, pero no dejó rastro reproducible. Si mañana hay que rehacer la suscripción desde cero, un comando que vivió solo en el historial de una shell no existe.
+3. **Leer el código HTTP antes que el mensaje:** 401 = identidad no válida (revisar OIDC, TS-08); 403 = identidad válida, permiso faltante (revisar roles). Diagnósticos completamente distintos.
+4. **Pendiente de endurecer:** un principal que puede escribir role assignments a nivel suscripción puede auto-asignarse Owner. El endurecimiento profesional es agregar una *condition* al role assignment que restrinja **qué roles** puede asignar (solo `AcrPull` y `Key Vault Secrets Officer`). Aceptable en este lab; no lo sería en producción.
+
+---
+
+<a name="ts-10"></a>
+## TS-10 — Ser Owner de la suscripción no da acceso a los secretos del Key Vault
+
+**Sprint 9 · Azure RBAC / Key Vault**
+
+### Síntoma
+Con el ambiente `dev` ya creado, intentar leer la password de Postgres que Terraform había guardado en el vault falló:
+
+```text
+ERROR: (Forbidden) Caller is not authorized to perform action on resource.
+If role assignments, deny assignments or role definitions were changed
+recently, please observe propagation time.
+```
+
+Lo hacía la misma cuenta que es **Owner de la suscripción** y que creó todo.
+
+### Impacto
+Rompía el paso 3 del runbook (`docs/deployment.md`), que instruía leer la password con `az keyvault secret show`. Sin acceso al vault tampoco se podía **sembrar** la key de TMDB. El ambiente quedaba imposible de configurar para el deploy.
+
+### Hipótesis descartadas
+1. ¿Propagación de RBAC? → **No**: el mensaje lo sugiere, pero esperar no cambió nada. La asignación que faltaba nunca existió.
+2. ¿El vault tiene firewall o private endpoint? → **No**: `public_network_access_enabled` estaba en `true`.
+3. ¿El secreto no existe o tiene otro nombre? → **No**: el error es de *autorización*, previo a resolver el nombre del secreto.
+
+### Evidencia
+```powershell
+az role assignment list --scope <vault-id> -o table
+# Solo aparecía el service principal de CI con 'Key Vault Secrets Officer'.
+# La cuenta humana (Owner de la suscripción) no figuraba en el scope del vault.
+```
+
+### Diagnóstico
+Un Key Vault con `rbac_authorization_enabled = true` separa **dos planos de permisos distintos**:
+
+| Plano | Qué permite | Quién lo tiene |
+|---|---|---|
+| **Management plane** | Crear, borrar y configurar el vault; ver sus propiedades | `Owner`, `Contributor` |
+| **Data plane** | Leer y escribir **el contenido** de los secretos | Solo roles específicos: `Key Vault Secrets Officer`, `Key Vault Secrets User` |
+
+**Owner no incluye el data plane, y es a propósito:** permite que alguien administre la infraestructura del vault (crearlo, aplicarle políticas, borrarlo) sin poder leer los secretos que contiene. Es separación de responsabilidades, no un bug.
+
+La causa concreta en nuestro caso: el módulo de Terraform asigna `Key Vault Secrets Officer` a `data.azurerm_client_config.current.object_id` — es decir, **a quien corra el apply**. Mientras Terraform se corría local, ese "quien" era el operador humano y todo funcionaba. Cuando Genesis pasó a correr en CI, pasó a ser el service principal, y el humano se quedó afuera sin que nada lo avisara.
+
+### Root Cause
+Un permiso definido como "quien ejecuta" en vez de "quién necesita acceso", combinado con la suposición de que Owner cubre todo.
+
+### Solución
+Script idempotente [`scripts/azure/grant-keyvault-operator-access.ps1`](../scripts/azure/grant-keyvault-operator-access.ps1), que asigna el rol de data plane al operador:
+
+```powershell
+./scripts/azure/grant-keyvault-operator-access.ps1 -Environment dev
+```
+
+Y, aprovechando el hallazgo, se replanteó el diseño completo de secretos: en vez de que un humano lea la password del vault para copiarla a GitHub Secrets, ahora **`deploy.yml` lee los secretos directamente del Key Vault** en cada despliegue. Una copia menos de la password dando vueltas y un paso manual menos en el runbook.
+
+### Acción preventiva
+1. **Management plane ≠ data plane.** Owner/Contributor no dan acceso al contenido de Key Vault, Storage (datos) ni Service Bus. Cada uno tiene sus propios roles de datos.
+2. **Cuidado con los permisos atados a "quien ejecuta"** (`azurerm_client_config.current`). Funcionan mientras la identidad no cambie; el día que el apply se mueve de una laptop a CI, cambian de destinatario en silencio. Si alguien **necesita** acceso, nombralo explícitamente.
+3. Al mover un `terraform apply` de local a CI, revisar qué permisos dependían de quién lo corría.
 
 ---
 

@@ -32,22 +32,32 @@ GitHub → **Actions** → **Genesis (Create Infrastructure)** → *Run workflow
 
 Esto corre `fmt → init → validate → Checkov → plan → apply` contra `terraform/environments/azure/dev` y crea: resource group, VNet, AKS (con el addon de Ingress), ACR, Postgres Flexible Server, Key Vault, Log Analytics. Tarda ~10-15 min (AKS es lo lento).
 
-## 3. Cargar los secretos que `deploy.yml` necesita
+## 3. Sembrar los secretos externos en Key Vault (una sola vez por ambiente)
 
-**Gap conocido — todavía manual.** `genesis.yml` no publica automáticamente estos valores como GitHub Secrets; hay que hacerlo a mano después de cada `apply`:
+**Key Vault es la única fuente de verdad de los secretos de aplicación.** `deploy.yml` los lee de ahí en cada despliegue — no hay que copiarlos a GitHub Secrets. En GitHub solo viven los identificadores de Azure para el OIDC (`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`), que no son secretos.
 
-```bash
-# Password de Postgres (Terraform la generó y la guardó en Key Vault, nunca en texto plano)
-PGPASS=$(az keyvault secret show --vault-name kv-movieops-dev-<sufijo> --name postgres-admin-password --query value -o tsv)
+Cada secreto llega al vault de forma distinta según quién lo origine:
 
-# FQDN del server (sale de terraform output, o del log de Genesis)
-PGFQDN=$(cd terraform/environments/azure/dev && terraform output -raw postgres_fqdn)
+| Secreto | Origen | Cómo llega al vault |
+|---|---|---|
+| `postgres-admin-password` | Terraform lo **genera** (`random_password`) | Automático: Genesis lo escribe. **Nada que hacer** |
+| `tmdb-api-key` | **Externo**, lo emite un tercero | A mano, una sola vez — nunca por Terraform, porque terminaría en texto plano en el state |
 
-gh secret set BACKEND_DB_CONNECTION_STRING --body "Host=$PGFQDN;Port=5432;Database=movieops;Username=movieopsadmin;Password=$PGPASS"
-gh secret set TMDB_API_KEY --body "<tu api key de TMDB>"
+Para sembrar la key de TMDB necesitás acceso de datos al vault. Ojo: **ser Owner de la suscripción no alcanza** — Key Vault con RBAC exige un rol de plano de datos explícito (ver [TS-10](troubleshooting.md#ts-10)):
+
+```powershell
+# Una sola vez por ambiente: te asigna Key Vault Secrets Officer sobre el vault
+./scripts/azure/grant-keyvault-operator-access.ps1 -Environment dev
+
+# Sembrar la key (el valor nunca pasa por GitHub ni por el repo)
+az keyvault secret set `
+    --vault-name <kv-movieops-dev-xxxx> `
+    --name tmdb-api-key `
+    --value '<tu api key de TMDB>' `
+    --content-type 'TMDB API read access token'
 ```
 
-Solo hace falta repetirlo si el secreto cambia o si se recreó el ambiente (una password nueva sale de cada `apply` que reemplaza el Postgres).
+Solo hay que repetirlo si recreás el ambiente desde cero o si rotás la key.
 
 ## 4. CD: desplegar el tag elegido a `dev`
 
@@ -80,11 +90,12 @@ push/merge a main
       ↓
    ci.yml  (automático)  →  imagen en GHCR (sha-XXXXXXX)
       ↓
- genesis.yml  (manual)   →  infraestructura de <ambiente> en Azure
+ genesis.yml  (manual)   →  infraestructura de <ambiente> + password de Postgres en Key Vault
       ↓
- [cargar secretos]       →  BACKEND_DB_CONNECTION_STRING, TMDB_API_KEY
+ [sembrar tmdb-api-key]  →  una sola vez por ambiente, directo al Key Vault
       ↓
-cd-<ambiente>.yml        →  deploy.yml: promueve la imagen, aplica k8s, health-check, rollback si falla
+cd-<ambiente>.yml        →  deploy.yml: lee los secretos del Key Vault, promueve la imagen,
+                            aplica k8s, health-check, rollback si falla
       ↓
 apocalipsis.yml (manual) →  destruye <ambiente> cuando termines
 ```
