@@ -20,7 +20,7 @@ app/            Backend (.NET) and frontend (Angular) source
 k8s/            Kubernetes manifests (base + dev/staging/production overlays)
 argocd/         Argo CD Applications and Projects (GitOps)
 terraform/      Infrastructure as Code, organized per cloud provider
-scripts/        Local automation (build, test, deploy, health checks)
+scripts/        Local automation grouped by domain (Azure, tests, etc.)
 docs/           Architecture, pipeline design, ADRs, incident postmortems
 ```
 
@@ -51,3 +51,8 @@ Running the apps outside Docker (e.g. for faster iteration) still works: `dotnet
 scripts/test.sh          # fast unit tests only
 scripts/test.sh --all    # + integration tests (Testcontainers, needs Docker) + frontend tests
 ```
+
+### Operational scripts
+
+See [`scripts/README.md`](./scripts/README.md) for Azure maintenance and other
+local automation.

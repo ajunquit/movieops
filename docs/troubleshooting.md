@@ -22,6 +22,7 @@ Formato de cada entrada: el de la sección 46 del plan — Síntoma, Impacto, Hi
 - [TS-05 — La URL base de TMDB perdía silenciosamente un segmento del path](#ts-05)
 - [TS-06 — El workflow no podía ni arrancar: working-directory antes del checkout](#ts-06)
 - [TS-07 — El contenido del Sprint 9 desapareció de main después de mergear](#ts-07)
+- [TS-08 — Entra ID rechazaba el sujeto OIDC inmutable del repositorio](#ts-08)
 
 **Gotchas de herramientas y entorno** → [ver tabla al final](#gotchas)
 
@@ -350,6 +351,91 @@ kubectl kustomize k8s/base             # verificado antes de abrir el PR
 
 ---
 
+<a name="ts-08"></a>
+## TS-08 — Entra ID rechazaba el sujeto OIDC inmutable del repositorio
+
+**Sprint 9 · GitHub Actions / Azure OIDC**
+
+### Síntoma
+`genesis.yml` superó `terraform fmt`, pero `terraform init` falló al intentar
+leer el state remoto:
+
+```text
+AADSTS700213: No matching federated identity record found for presented
+assertion subject
+'repo:ajunquit@26319954/movieops@1368790728:environment:dev'
+```
+
+### Impacto
+Bloqueaba `Genesis`, `Apocalipsis` y cualquier despliegue que usara la misma
+App Registration. Terraform ni siquiera podía consultar los workspaces del
+backend remoto.
+
+### Hipótesis descartadas
+1. ¿Falta `permissions: id-token: write`? → **No**: GitHub sí emitió un token y
+   Entra ID pudo leer su assertion.
+2. ¿Hay que agregar `azure/login` antes de Terraform? → **No**: el backend
+   `azurerm` ya estaba intentando el intercambio OIDC mediante
+   `ARM_USE_OIDC=true`.
+3. ¿Falló o desapareció el Storage Account del state? → **No**: el error ocurrió
+   en la autenticación previa a cualquier operación contra el storage.
+
+### Evidencia
+El sujeto presentado en el propio error incluía IDs inmutables:
+
+```text
+repo:ajunquit@26319954/movieops@1368790728:environment:dev
+```
+
+GitHub confirmó la configuración efectiva:
+
+```powershell
+gh api repos/ajunquit/movieops/actions/oidc/customization/sub
+# use_immutable_subject: true
+# sub_claim_prefix: repo:ajunquit@26319954/movieops@1368790728
+```
+
+En cambio, las tres credenciales de la App Registration confiaban en el formato
+anterior:
+
+```text
+repo:ajunquit/movieops:environment:<environment>
+```
+
+### Diagnóstico
+GitHub usa por defecto sujetos OIDC inmutables para repositorios creados después
+del 15 de julio de 2026. MovieOps fue creado el 13 de septiembre de 2026, pero
+las credenciales federadas se prepararon manualmente con el formato histórico
+basado solo en nombres. Entra ID compara `issuer`, `subject` y `audience` de
+forma exacta y sensible a mayúsculas, por lo que rechazó el token válido.
+
+### Root Cause
+La relación de confianza de Entra ID se creó a partir de un formato OIDC
+obsoleto, en lugar de consultar el sujeto efectivo del repositorio.
+
+### Solución
+Se automatizó la sincronización de las tres credenciales:
+
+```powershell
+./scripts/azure/sync-github-oidc-federated-credentials.ps1
+```
+
+El script consulta `sub_claim_prefix` en GitHub, localiza
+`github-movieops-terraform`, actualiza o crea la credencial de cada environment
+y vuelve a leerlas para verificar el resultado. Puede previsualizarse con
+`-WhatIf` y ejecutarse repetidamente sin cambios innecesarios.
+
+### Acción preventiva
+1. No construir el sujeto desde nombres asumidos; consultar la configuración
+   OIDC efectiva de GitHub.
+2. Ejecutar el script después de crear, renombrar o transferir el repositorio.
+3. Mantener el environment en el sujeto para conservar el aislamiento
+   criptográfico entre `dev`, `staging` y `production`.
+4. Ante `AADSTS700213`, comparar primero los tres valores exactos del token
+   (`issuer`, `subject`, `audience`) contra la credencial de Entra ID.
+
+---
+
 <a name="gotchas"></a>
 ## Gotchas de herramientas y entorno
 
@@ -373,10 +459,10 @@ Fallos menores, de causa evidente una vez vistos, pero que cuestan tiempo la pri
 
 ## Patrones que se repiten
 
-Mirando los 7 casos profundos juntos, tres causas raíz aparecen una y otra vez:
+Mirando los 8 casos profundos juntos, tres causas raíz aparecen una y otra vez:
 
-1. **Algo implícito chocando con algo explícito** (TS-04 service CIDR, TS-06 working-directory). Los defaults se eligieron sin conocer tu configuración.
+1. **Algo implícito chocando con algo explícito** (TS-04 service CIDR, TS-06 working-directory, TS-08 formato OIDC). Los defaults se eligieron sin conocer tu configuración.
 2. **Resolución de nombres / red donde nadie miraba** (TS-01 IPv6, TS-02 puerto secuestrado, TS-05 combinación de URIs). El código estaba bien; el tráfico iba a otro lado.
 3. **Estado capturado demasiado temprano** (TS-03 config eager, TS-07 rama apuntando a un commit viejo). El valor era correcto cuando se leyó, y quedó obsoleto después.
 
-Y una lección transversal: **en los 7 casos, el diagnóstico salió de una evidencia concreta** (un log con la URL real, un `Get-NetTCPConnection`, un `git diff`), no de razonar sobre el código. Reproducir y observar primero; teorizar después.
+Y una lección transversal: **en los 8 casos, el diagnóstico salió de una evidencia concreta** (un log con la URL real, un `Get-NetTCPConnection`, un `git diff`), no de razonar sobre el código. Reproducir y observar primero; teorizar después.

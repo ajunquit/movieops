@@ -6,6 +6,17 @@ Receta operativa usando los workflows existentes (`ci.yml`, `genesis.yml`, `apoc
 
 Mergear los PRs pendientes que dejan `genesis.yml` y los manifiestos de `k8s/base` (Namespace/Ingress/HPA) en `main`. Sin esto, los pasos siguientes fallan.
 
+Verificar que las credenciales OIDC de Entra ID coincidan con el sujeto que
+GitHub emite actualmente. La sincronización es idempotente:
+
+```powershell
+./scripts/azure/sync-github-oidc-federated-credentials.ps1
+```
+
+Este paso también debe repetirse si el repositorio se crea, renombra o
+transfiere. Para diagnóstico detallado de `AADSTS700213`, ver
+[`TS-08`](troubleshooting.md#ts-08).
+
 ## 1. CI construye el artefacto
 
 No hay que disparar nada a mano: `ci.yml` corre automáticamente en cada push/merge a `main` — build + tests de backend y frontend en paralelo, quality gate, y `docker-build.yml` empuja `movieops-api:sha-<corto>` y `movieops-frontend:sha-<corto>` a GHCR.

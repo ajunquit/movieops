@@ -134,6 +134,20 @@ Format: **Situation** (context) → **Task** (what needed to happen) → **Actio
 
 ---
 
+## Sprint 9 — an immutable GitHub OIDC subject broke Azure federation
+
+**Situation:** The first `genesis.yml` run reached `terraform init`, but Entra ID rejected the GitHub token with `AADSTS700213`. The workflow already had `id-token: write`, the right GitHub Environment, and Terraform's OIDC variables.
+
+**Task:** Determine whether the failure was in the workflow, the Terraform backend, or the Azure trust configuration, and repair it without introducing a client secret.
+
+**Action:** Used the subject printed by Entra ID as evidence and compared it with the App Registration's three federated credentials. GitHub emitted `repo:ajunquit@26319954/movieops@1368790728:environment:dev`, while Azure trusted the historical `repo:ajunquit/movieops:environment:dev`. The repository was created after GitHub switched new repositories to immutable subjects containing owner/repository IDs. Built an idempotent PowerShell script that asks GitHub for its effective `sub_claim_prefix`, then creates or updates and verifies each environment credential in Entra ID.
+
+**Result:** `dev`, `staging`, and `production` now trust the exact immutable subjects GitHub emits; no long-lived Azure secret was added. The repair is repeatable after a repository rename or transfer and supports `-WhatIf` for review.
+
+**Answers:** ¿Cómo funciona OIDC entre GitHub y Azure? · ¿Cómo diagnosticar autenticación federada? · ¿Por qué preferir identidades inmutables a nombres? · ¿Cómo convertir una corrección manual en automatización idempotente?
+
+---
+
 ## Design decisions worth their own STAR (no bug, but interview-worthy)
 
 These didn't come from a failure — they're judgment calls made deliberately, which interviewers value just as much as debugging stories.
@@ -162,5 +176,6 @@ From [section 54](../MovieOps_DevOps_Plan.md):
 - ¿Por qué Terraform? / ¿Cómo organizar módulos? → ADR-0001 + Sprint 7 entry (real apply, real bug, real fix)
 - ¿Qué diferencia hay entre `plan` y `apply`? → Sprint 7: the plan showed 17 resources; after the AKS failure, the next plan showed only the 2 still missing — state is what makes that possible
 - ¿Cómo manejar secretos? (ampliado) → Sprint 7: generated Postgres password never touched `.tfvars`/CLI history, went straight into `random_password` → Key Vault
+- ¿Cómo autenticar GitHub Actions en Azure sin secretos? → Sprint 9: OIDC federado, sujetos inmutables y reparación de `AADSTS700213`
 
 Still open (will fill in as we build): rolling/blue-green/canary, GitOps/drift/reconciliation, Argo Rollouts, full incident-simulation set (Sprint 13).
