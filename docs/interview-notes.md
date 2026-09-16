@@ -98,7 +98,7 @@ Format: **Situation** (context) → **Task** (what needed to happen) → **Actio
 
 **Action:** `deploy.yml` uses `az acr import --source ghcr.io/.../movieops-api:<sha-tag>` — a server-side registry-to-registry copy. No `docker pull`/`docker push`, no local Docker daemon involved in the CD runner at all; Azure copies the manifest and layers directly between registries. The image's digest travels unchanged from GHCR to ACR.
 
-**Result:** The same artifact that passed `ci.yml`'s tests is what runs in every environment — provably, since the digest never changes across the copy. (Not yet run live — see the note in `docs/pipelines/PIPELINE_PATTERNS.md` about batching Sprint 8+9 validation together.)
+**Result:** The same artifact that passed `ci.yml`'s tests ran successfully in `dev`: CI published it to GHCR, `az acr import` promoted it to ACR without rebuilding, and AKS executed the SHA-tagged images through a green rollout and smoke test.
 
 **Answers:** ¿Qué significa Build Once, Deploy Many? · ¿Cómo versionar imágenes Docker? · ¿Qué diferencia hay entre CI y CD? (CI never talks to Azure at all; CD is the only thing that does)
 
@@ -156,7 +156,7 @@ Format: **Situation** (context) → **Task** (what needed to happen) → **Actio
 
 **Action:** Compared the effective Azure resources instead of reasoning only from manifests. The Load Balancer exposed TCP 80/443, but the custom NSG attached to the AKS subnet had only Azure's default rules. `AllowAzureLoadBalancerInBound` admits Azure's health probes; Standard Load Balancer preserves the real client's source IP, so user requests fell through to `DenyAllInBound` and were silently dropped. Added an explicit Terraform-managed inbound rule from `Internet` to ports 80/443. Also bounded every smoke-test request with `curl -m 8`, preserved curl's transport exit code, and made the step timeout larger than the combined retry budget.
 
-**Result:** The fix is reproducible through `genesis.yml`, with no portal changes or one-off Azure commands. Terraform validation passes; the next manual Genesis/CD run is the pending end-to-end verification.
+**Result:** The fix remained reproducible through `genesis.yml`, with no portal changes or one-off Azure commands. The next CD run completed end to end: both Deployments reached `2/2`, the public Ingress served the frontend, and `/api/movies` returned HTTP 200.
 
 **Answers:** ¿Cómo diagnosticar tráfico desde un Load Balancer hasta un pod? · ¿Qué diferencia hay entre health probes y tráfico de aplicación? · ¿Por qué un timeout apunta a packet filtering? · ¿Cómo diseñar reintentos con deadlines coherentes?
 

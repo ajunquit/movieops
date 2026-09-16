@@ -2,7 +2,7 @@
 
 Production-grade DevOps reference lab: a small movie catalog app (.NET + Angular + PostgreSQL, integrated with TMDB) used as the vehicle to practice a complete, real delivery cycle — CI/CD, containers, Infrastructure as Code, Kubernetes, GitOps with Argo CD, progressive delivery, security scanning, and observability.
 
-The full plan, roadmap, patterns catalog, and sprint breakdown live in [MovieOps_DevOps_Plan.md](./MovieOps_DevOps_Plan.md). Design decisions are tracked as ADRs in [docs/adr/](./docs/adr/).
+The full plan, roadmap, patterns catalog, and sprint breakdown live in [MovieOps_DevOps_Plan.md](./MovieOps_DevOps_Plan.md). The implemented delivery flow is documented in [docs/ci-cd.md](./docs/ci-cd.md), and design decisions are tracked as ADRs in [docs/adr/](./docs/adr/).
 
 ## Stack
 
@@ -26,7 +26,10 @@ docs/           Architecture, pipeline design, ADRs, incident postmortems
 
 ## Status
 
-Sprint 5 done — see the plan document for the full roadmap. Backend (.NET, layered), frontend (Angular), TMDB integration, automated tests, and Docker Compose are all in place.
+Sprint 9 validated in `dev`: CI, Terraform provisioning, image promotion
+GHCR→ACR, AKS deployment, public Ingress and the end-to-end smoke test have run
+successfully. GitOps with Argo CD and progressive delivery remain upcoming
+milestones; see the plan document for the full roadmap.
 
 ## Local development
 

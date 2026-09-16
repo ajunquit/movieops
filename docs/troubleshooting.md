@@ -668,8 +668,9 @@ resource "azurerm_network_security_rule" "allow_http_inbound" {
 ```
 
 Los puertos coinciden con las reglas reales del Load Balancer del addon
-`web_app_routing`. La regla se aplicará mediante `genesis.yml`; no se ejecutan
-comandos manuales mutantes fuera de Terraform.
+`web_app_routing`. La regla se aplicó mediante `genesis.yml`; no se ejecutaron
+comandos manuales mutantes fuera de Terraform. El siguiente CD terminó con los
+dos Deployments en `2/2` y respuestas HTTP 200 desde frontend y API.
 
 El smoke test también quedó acotado y observable:
 

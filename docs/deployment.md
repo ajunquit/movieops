@@ -1,10 +1,14 @@
 # Runbook: crear un ambiente desde cero y desplegar `main`
 
-Receta operativa usando los workflows existentes (`ci.yml`, `genesis.yml`, `apocalipsis.yml`, `cd-*.yml` → `deploy.yml`). Ejemplo con `dev`; `staging`/`production` siguen el mismo flujo cambiando el nombre del ambiente (y `production` pide aprobación de un reviewer en cada paso que toca ese Environment).
+Receta operativa usando los workflows existentes (`ci.yml`, `genesis.yml`, `apocalipsis.yml`, `cd-*.yml` → `deploy.yml`). `dev` es el ambiente implementado y validado; `staging`/`production` seguirán el mismo flujo cuando tengan configuración Terraform propia (y `production` pedirá aprobación de un reviewer en cada paso que toque ese Environment).
+
+Para entender responsabilidades, arquitectura y la diferencia entre Microsoft
+Azure y Azure DevOps, ver [CI/CD e infraestructura: flujo implementado](ci-cd.md).
 
 ## 0. Prerrequisito (una sola vez)
 
-Mergear los PRs pendientes que dejan `genesis.yml` y los manifiestos de `k8s/base` (Namespace/Ingress/HPA) en `main`. Sin esto, los pasos siguientes fallan.
+Confirmar que `genesis.yml`, `deploy.yml` y los manifiestos de `k8s/base`
+(Namespace/Ingress/HPA) estén en `main`. Sin esto, los pasos siguientes fallan.
 
 Verificar que las credenciales OIDC de Entra ID coincidan con el sujeto que
 GitHub emite actualmente. La sincronización es idempotente:
