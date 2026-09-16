@@ -30,7 +30,7 @@ GitHub → **Actions** → **Genesis (Create Infrastructure)** → *Run workflow
 - `environment`: `dev`
 - `confirm`: `dev` (tiene que matchear exacto o aborta sin tocar nada)
 
-Esto corre `fmt → init → validate → Checkov → plan → apply` contra `terraform/environments/azure/dev` y crea: resource group, VNet, AKS (con el addon de Ingress), ACR, Postgres Flexible Server, Key Vault, Log Analytics. Tarda ~10-15 min (AKS es lo lento).
+Esto corre `fmt → init → validate → Checkov → plan → apply` contra `terraform/environments/azure/dev` y crea: resource group, VNet + NSG (entrada pública explícita en `80/443`), AKS (con el addon de Ingress), ACR, Postgres Flexible Server, Key Vault y Log Analytics. Tarda ~10-15 min (AKS es lo lento). Si el Ingress obtiene IP pero el tráfico expira, ver [TS-11](troubleshooting.md#ts-11).
 
 ## 3. Sembrar los secretos externos en Key Vault (una sola vez por ambiente)
 
@@ -65,7 +65,7 @@ GitHub → **Actions** → **CD - Dev** → *Run workflow*:
 
 - `image_tag`: el `sha-<corto>` del paso 1
 
-Esto corre `deploy.yml`: login OIDC → credenciales de AKS → `az acr import` (promueve la MISMA imagen de GHCR a ACR de `dev`, sin rebuild) → crea/actualiza el Secret de Kubernetes desde los GitHub Secrets → `kustomize set image` → `kubectl apply -k k8s/base` → espera rollout healthy → smoke test contra el Ingress → rollback automático si algo falla.
+Esto corre `deploy.yml`: login OIDC → credenciales de AKS → `az acr import` (promueve la MISMA imagen de GHCR a ACR de `dev`, sin rebuild) → lee Key Vault y crea/actualiza el Secret de Kubernetes → `kustomize set image` → `kubectl apply -k k8s/base` → espera rollout healthy → smoke test acotado contra el Ingress → rollback automático si algo falla.
 
 ## 5. Verificar
 

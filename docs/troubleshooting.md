@@ -25,6 +25,7 @@ Formato de cada entrada: el de la sección 46 del plan — Síntoma, Impacto, Hi
 - [TS-08 — Entra ID rechazaba el sujeto OIDC inmutable del repositorio](#ts-08)
 - [TS-09 — Contributor no alcanza: 403 al crear role assignments](#ts-09)
 - [TS-10 — Ser Owner de la suscripción no da acceso a los secretos del Key Vault](#ts-10)
+- [TS-11 — El Ingress tenía IP pública pero el NSG descartaba todo el tráfico](#ts-11)
 
 **Gotchas de herramientas y entorno** → [ver tabla al final](#gotchas)
 
@@ -577,6 +578,119 @@ Y, aprovechando el hallazgo, se replanteó el diseño completo de secretos: en v
 
 ---
 
+<a name="ts-11"></a>
+## TS-11 — El Ingress tenía IP pública pero el NSG descartaba todo el tráfico
+
+**Sprint 9 · AKS / Azure networking / CD**
+
+### Síntoma
+El primer despliegue real llegó correctamente hasta AKS: los Deployments
+completaron su rollout y el Ingress recibió una IP pública. Sin embargo, el
+smoke test contra `http://<EXTERNAL_IP>/api/movies` no obtenía respuesta. La
+conexión quedaba esperando hasta agotar el timeout, en vez de devolver un error
+HTTP o un `connection refused` inmediato.
+
+### Impacto
+El pipeline consideraba fallido un despliegue cuyos pods ya estaban sanos. El
+rollback automático tampoco podía recuperar una versión previa por tratarse del
+primer deploy. Además, el `curl` original no tenía límite total por request, así
+que un solo paquete descartado podía alargar el job mucho más que los reintentos
+aparentemente definidos por el loop.
+
+### Hipótesis descartadas
+1. ¿El Ingress todavía no tenía dirección externa? → **No**: Kubernetes ya
+   publicaba una IP en `.status.loadBalancer.ingress[0].ip`.
+2. ¿Los pods o sus probes estaban fallando? → **No**: ambos rollouts habían
+   terminado y los pods estaban Ready.
+3. ¿El Load Balancer no exponía los puertos correctos? → **No**: Azure mostraba
+   reglas TCP `80 → 80` y `443 → 443` para el ingress administrado.
+
+### Evidencia
+El Load Balancer estaba configurado, pero el NSG asociado a la subnet de AKS no
+tenía ninguna regla personalizada:
+
+```powershell
+az network nsg rule list `
+    --resource-group rg-movieops-dev `
+    --nsg-name nsg-movieops-dev-aks `
+    --output table
+# Sin resultados
+```
+
+Por tanto solo existían las reglas predeterminadas de Azure:
+
+```text
+AllowVnetInBound
+AllowAzureLoadBalancerInBound
+DenyAllInBound
+```
+
+La segunda permite los **health probes** del Load Balancer, no el tráfico real
+de clientes. Un Standard Load Balancer conserva la IP de origen del cliente; el
+NSG ve una IP de Internet y la request termina en `DenyAllInBound`. El descarte
+silencioso explica el timeout: no había ningún proceso rechazando activamente la
+conexión.
+
+### Diagnóstico
+Se confundieron dos flujos distintos que atraviesan el mismo Load Balancer:
+
+| Flujo | Origen que evalúa el NSG | Regla necesaria |
+|---|---|---|
+| Health probe | Service tag `AzureLoadBalancer` | La regla default ya lo permite |
+| Request del usuario | IP pública original del cliente | Regla explícita desde `Internet` |
+
+El Load Balancer estaba sano precisamente porque sus probes sí pasaban, aunque
+el tráfico de usuario estuviera bloqueado.
+
+### Root Cause
+Se asoció un NSG propio a la subnet de AKS sin declarar los puertos de entrada
+de la aplicación. El default `AllowAzureLoadBalancerInBound` se interpretó como
+si autorizara todo el tráfico que atraviesa el Load Balancer, cuando solo cubre
+su infraestructura de probes.
+
+### Solución
+Terraform declara ahora la regla que faltaba:
+
+```hcl
+resource "azurerm_network_security_rule" "allow_http_inbound" {
+  name                        = "AllowHttpInbound"
+  priority                    = 100
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_ranges     = ["80", "443"]
+  source_address_prefix       = "Internet"
+  destination_address_prefix  = "*"
+  resource_group_name         = var.resource_group_name
+  network_security_group_name = azurerm_network_security_group.aks.name
+}
+```
+
+Los puertos coinciden con las reglas reales del Load Balancer del addon
+`web_app_routing`. La regla se aplicará mediante `genesis.yml`; no se ejecutan
+comandos manuales mutantes fuera de Terraform.
+
+El smoke test también quedó acotado y observable:
+
+- Cada request tiene un máximo total de 8 segundos (`curl -m 8`).
+- Los fallos de transporte conservan el exit code de `curl` y no se confunden
+  con una respuesta HTTP.
+- El presupuesto combinado de reintentos cabe dentro del timeout de 7 minutos
+  del step.
+
+### Acción preventiva
+1. En un Standard Load Balancer, modelar por separado probes y tráfico de
+   aplicación; que el backend figure healthy no prueba accesibilidad pública.
+2. Toda subnet con NSG propio debe declarar explícitamente los puertos públicos
+   que consume el Load Balancer.
+3. Todo smoke test de red debe limitar conexión **y transferencia completa**, no
+   depender de los timeouts por defecto del cliente.
+4. Comparar el presupuesto máximo de los loops con `timeout-minutes`; la defensa
+   externa debe ser mayor que la suma de los deadlines internos.
+
+---
+
 <a name="gotchas"></a>
 ## Gotchas de herramientas y entorno
 
@@ -600,10 +714,10 @@ Fallos menores, de causa evidente una vez vistos, pero que cuestan tiempo la pri
 
 ## Patrones que se repiten
 
-Mirando los 8 casos profundos juntos, tres causas raíz aparecen una y otra vez:
+Mirando los 11 casos profundos juntos, tres causas raíz aparecen una y otra vez:
 
-1. **Algo implícito chocando con algo explícito** (TS-04 service CIDR, TS-06 working-directory, TS-08 formato OIDC). Los defaults se eligieron sin conocer tu configuración.
+1. **Algo implícito chocando con algo explícito** (TS-04 service CIDR, TS-06 working-directory, TS-08 formato OIDC, TS-11 reglas default del NSG). Los defaults se eligieron sin conocer tu configuración.
 2. **Resolución de nombres / red donde nadie miraba** (TS-01 IPv6, TS-02 puerto secuestrado, TS-05 combinación de URIs). El código estaba bien; el tráfico iba a otro lado.
 3. **Estado capturado demasiado temprano** (TS-03 config eager, TS-07 rama apuntando a un commit viejo). El valor era correcto cuando se leyó, y quedó obsoleto después.
 
-Y una lección transversal: **en los 8 casos, el diagnóstico salió de una evidencia concreta** (un log con la URL real, un `Get-NetTCPConnection`, un `git diff`), no de razonar sobre el código. Reproducir y observar primero; teorizar después.
+Y una lección transversal: **en los 11 casos, el diagnóstico salió de una evidencia concreta** (un log con la URL real, un `Get-NetTCPConnection`, un `git diff`, las reglas efectivas de Azure), no de razonar sobre el código. Reproducir y observar primero; teorizar después.

@@ -113,23 +113,39 @@ jobs:
       - name: Smoke test
         id: smoke
         if: steps.rollout.outcome == 'success'
+        # The two loops can consume ~5m35s in their combined worst case.
+        timeout-minutes: 7 # defense in depth above the explicit per-attempt deadlines
         run: |
           for i in $(seq 1 30); do
             EXTERNAL_IP=$(kubectl get ingress movieops -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
             [ -n "$EXTERNAL_IP" ] && break
-            sleep 5
+            if [ "$i" -lt 30 ]; then sleep 5; fi
           done
           if [ -z "$EXTERNAL_IP" ]; then
             echo "::error::Ingress never got an external IP."
             exit 1
           fi
 
+          # -m bounds the WHOLE request (connect + transfer): without it, a
+          # silently-dropped packet (e.g. an NSG deny) hangs curl far longer
+          # than this loop is meant to wait — see TS-11.
           for i in $(seq 1 15); do
-            if curl -sf "http://$EXTERNAL_IP/api/movies" > /dev/null; then
-              echo "Smoke test passed (frontend at http://$EXTERNAL_IP/, API at http://$EXTERNAL_IP/api)."
-              exit 0
+            if code=$(curl -sS -m 8 -o /dev/null -w "%{http_code}" "http://$EXTERNAL_IP/api/movies"); then
+              if [ "$code" = "200" ]; then
+                echo "Smoke test passed (frontend at http://$EXTERNAL_IP/, API at http://$EXTERNAL_IP/api)."
+                exit 0
+              fi
+              result="got HTTP $code"
+            else
+              curl_exit=$?
+              result="curl failed with exit $curl_exit (HTTP ${code:-000})"
             fi
-            sleep 5
+            if [ "$i" -lt 15 ]; then
+              echo "Attempt $i/15: $result; retrying in 5s..."
+              sleep 5
+            else
+              echo "Attempt $i/15: $result."
+            fi
           done
           echo "::error::Smoke test failed against http://$EXTERNAL_IP/api/movies"
           exit 1

@@ -148,6 +148,20 @@ Format: **Situation** (context) → **Task** (what needed to happen) → **Actio
 
 ---
 
+## Sprint 9 — a healthy Azure Load Balancer that dropped every real request
+
+**Situation:** The first live CD run completed both Kubernetes rollouts and the managed NGINX Ingress received a public IP, but the external smoke test hung until timeout. Azure still reported the Load Balancer backend as healthy.
+
+**Task:** Find which layer was dropping traffic across DNS/IP allocation, Load Balancer rules, NSG filtering, Ingress routing, Services, and pods—without confusing a healthy probe with end-to-end reachability.
+
+**Action:** Compared the effective Azure resources instead of reasoning only from manifests. The Load Balancer exposed TCP 80/443, but the custom NSG attached to the AKS subnet had only Azure's default rules. `AllowAzureLoadBalancerInBound` admits Azure's health probes; Standard Load Balancer preserves the real client's source IP, so user requests fell through to `DenyAllInBound` and were silently dropped. Added an explicit Terraform-managed inbound rule from `Internet` to ports 80/443. Also bounded every smoke-test request with `curl -m 8`, preserved curl's transport exit code, and made the step timeout larger than the combined retry budget.
+
+**Result:** The fix is reproducible through `genesis.yml`, with no portal changes or one-off Azure commands. Terraform validation passes; the next manual Genesis/CD run is the pending end-to-end verification.
+
+**Answers:** ¿Cómo diagnosticar tráfico desde un Load Balancer hasta un pod? · ¿Qué diferencia hay entre health probes y tráfico de aplicación? · ¿Por qué un timeout apunta a packet filtering? · ¿Cómo diseñar reintentos con deadlines coherentes?
+
+---
+
 ## Design decisions worth their own STAR (no bug, but interview-worthy)
 
 These didn't come from a failure — they're judgment calls made deliberately, which interviewers value just as much as debugging stories.
@@ -177,5 +191,6 @@ From [section 54](../MovieOps_DevOps_Plan.md):
 - ¿Qué diferencia hay entre `plan` y `apply`? → Sprint 7: the plan showed 17 resources; after the AKS failure, the next plan showed only the 2 still missing — state is what makes that possible
 - ¿Cómo manejar secretos? (ampliado) → Sprint 7: generated Postgres password never touched `.tfvars`/CLI history, went straight into `random_password` → Key Vault
 - ¿Cómo autenticar GitHub Actions en Azure sin secretos? → Sprint 9: OIDC federado, sujetos inmutables y reparación de `AADSTS700213`
+- ¿Cómo diagnosticar un Ingress con IP pública pero inaccesible? → Sprint 9: Standard Load Balancer, health probes, NSG y timeouts del smoke test
 
 Still open (will fill in as we build): rolling/blue-green/canary, GitOps/drift/reconciliation, Argo Rollouts, full incident-simulation set (Sprint 13).
