@@ -93,6 +93,32 @@ apuntarlo a otra App Registration, suscripción o conjunto de roles:
     -Roles 'Contributor', 'Role Based Access Control Administrator'
 ```
 
+### Dar acceso de datos al Key Vault a un operador humano
+
+`azure/grant-keyvault-operator-access.ps1` asigna `Key Vault Secrets Officer`
+sobre el vault de un ambiente, para poder **sembrar** secretos externos (como
+la API key de TMDB) que Terraform no debe gestionar.
+
+**Ser Owner de la suscripción no alcanza.** Key Vault con RBAC separa el
+*management plane* (crear/configurar el vault — cubierto por Owner) del
+*data plane* (leer/escribir el contenido de los secretos — exige un rol
+específico). Ver [TS-10](../docs/troubleshooting.md#ts-10).
+
+```powershell
+./scripts/azure/grant-keyvault-operator-access.ps1 -Environment dev -WhatIf
+./scripts/azure/grant-keyvault-operator-access.ps1 -Environment dev
+```
+
+Por defecto usa la cuenta con sesión iniciada y descubre el vault del resource
+group del ambiente. Se puede apuntar explícitamente:
+
+```powershell
+./scripts/azure/grant-keyvault-operator-access.ps1 `
+    -ResourceGroupName 'rg-movieops-dev' `
+    -VaultName 'kv-movieops-dev-xxxx' `
+    -PrincipalObjectId '00000000-0000-0000-0000-000000000000'
+```
+
 ## Nivel de bootstrap
 
 Los dos scripts de `azure/` son de **nivel bootstrap**: se ejecutan una vez por

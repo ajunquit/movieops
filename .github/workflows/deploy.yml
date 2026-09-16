@@ -69,11 +69,30 @@ jobs:
               --force
           done
 
-      - name: Create/update application secrets
+      - name: Create/update application secrets from Key Vault
+        # Key Vault is the single source of truth for application secrets — they
+        # are never copied into GitHub Secrets. GitHub only holds the Azure OIDC
+        # identifiers, which aren't secrets at all. This is the last hop of the
+        # chain in plan section 11: .env → GitHub Secrets → Key Vault → k8s Secrets.
         run: |
+          VAULT=$(az keyvault list --resource-group "$RESOURCE_GROUP" --query "[0].name" -o tsv)
+          PG_FQDN=$(az postgres flexible-server list --resource-group "$RESOURCE_GROUP" --query "[0].fullyQualifiedDomainName" -o tsv)
+          PG_USER=$(az postgres flexible-server list --resource-group "$RESOURCE_GROUP" --query "[0].administratorLogin" -o tsv)
+
+          PG_PASS=$(az keyvault secret show --vault-name "$VAULT" --name postgres-admin-password --query value -o tsv)
+          TMDB_KEY=$(az keyvault secret show --vault-name "$VAULT" --name tmdb-api-key --query value -o tsv)
+
+          # Values fetched at runtime are NOT masked automatically the way
+          # ${{ secrets.* }} are — register them so they can't leak into the log.
+          echo "::add-mask::$PG_PASS"
+          echo "::add-mask::$TMDB_KEY"
+
+          CONN="Host=$PG_FQDN;Port=5432;Database=movieops;Username=$PG_USER;Password=$PG_PASS;SSL Mode=Require"
+          echo "::add-mask::$CONN"
+
           kubectl create secret generic backend-secrets \
-            --from-literal=ConnectionStrings__Default="${{ secrets.BACKEND_DB_CONNECTION_STRING }}" \
-            --from-literal=Tmdb__ApiKey="${{ secrets.TMDB_API_KEY }}" \
+            --from-literal=ConnectionStrings__Default="$CONN" \
+            --from-literal=Tmdb__ApiKey="$TMDB_KEY" \
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Set image tags (Kustomize)
