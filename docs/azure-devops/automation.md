@@ -151,7 +151,10 @@ Estado: **implementado; pendiente de ejecución**.
 
 Referencias: [Environments REST API](https://learn.microsoft.com/en-us/rest/api/azure/devops/distributedtask/environments/add?view=azure-devops-rest-7.1) y [Approvals and Checks REST API](https://learn.microsoft.com/en-us/rest/api/azure/devops/approvalsandchecks/check-configurations/add?view=azure-devops-rest-7.1).
 
-### `configure-pipelines.ps1`
+### `03-configure-pipelines/configure-pipelines.ps1`
+
+Estado: **implementado para `MovieOps-Diagnostic`; pendiente del gate manual de
+GitHub App, publicación en `main` y ejecución**.
 
 Se ejecuta después del consentimiento de GitHub App:
 

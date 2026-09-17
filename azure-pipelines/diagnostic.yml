@@ -1,0 +1,54 @@
+trigger: none
+pr: none
+
+name: diagnostic-$(Date:yyyyMMdd)-$(Rev:r)
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  azureServiceConnection: sc-movieops-azure-wif
+  expectedSubscriptionId: b7fdb48a-4bf0-4c7b-9708-3d875a551936
+  expectedTenantId: 71747eda-0e30-46d9-a3dd-09adb3a83ff3
+
+jobs:
+  - job: VerifyAzureIdentity
+    displayName: Verify WIF and read-only Azure access
+    timeoutInMinutes: 10
+    steps:
+      - checkout: self
+        displayName: Checkout GitHub repository
+        fetchDepth: 1
+        persistCredentials: false
+
+      - task: AzureCLI@2
+        displayName: Verify Azure identity and subscription reads
+        inputs:
+          azureSubscription: $(azureServiceConnection)
+          scriptType: bash
+          scriptLocation: inlineScript
+          addSpnToEnvironment: false
+          inlineScript: |
+            set -euo pipefail
+
+            subscription_id="$(az account show --query id --output tsv)"
+            tenant_id="$(az account show --query tenantId --output tsv)"
+
+            if [[ "$subscription_id" != "$(expectedSubscriptionId)" ]]; then
+              echo "Unexpected subscription: $subscription_id" >&2
+              exit 1
+            fi
+
+            if [[ "$tenant_id" != "$(expectedTenantId)" ]]; then
+              echo "Unexpected tenant: $tenant_id" >&2
+              exit 1
+            fi
+
+            echo "WIF authentication verified for subscription $subscription_id."
+            echo "Read-only Resource Group inventory:"
+            az group list \
+              --query "[].{name:name, location:location}" \
+              --output table
+
+            echo "Diagnostic completed without creating or modifying Azure resources."
+

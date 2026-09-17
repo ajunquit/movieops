@@ -25,8 +25,8 @@ NN-nombre-del-paso/
 |---:|---|---|---|
 | 00 | [`00-bootstrap-project`](00-bootstrap-project/) | Crear/verificar el Project `MovieOps` | Completado |
 | 01 | [`01-service-connection-wif`](01-service-connection-wif/) | Identidad, service connection WIF y RBAC | Completado |
-| 02 | [`02-configure-environments`](02-configure-environments/) | Environments, branch control y approval | Implementado; pendiente de ejecución |
-| 03 | `03-configure-pipelines` | GitHub connection y registro de pipelines | Pendiente |
+| 02 | [`02-configure-environments`](02-configure-environments/) | Environments, branch control y approval | Completado |
+| 03 | [`03-configure-pipelines`](03-configure-pipelines/) | GitHub App, diagnóstico y autorización por pipeline | Implementado; pendiente de gate manual y ejecución |
 | 04 | `04-configure-retention` | Política de retención | Pendiente |
 | 05 | `05-verify-bootstrap` | Verificación read-only y diagnóstico | Pendiente |
 | 99 | `99-full-bootstrap` | Orquestador reanudable de todos los pasos | Futuro, después de validar cada script |

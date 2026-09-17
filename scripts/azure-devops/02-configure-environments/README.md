@@ -2,7 +2,15 @@
 
 ## Estado
 
-Implementado y validado estáticamente. Pendiente de ejecución por el operador.
+Completado y verificado el 16 de septiembre de 2026.
+
+Evidencia registrada:
+
+- `dev` (ID `11`): Branch control.
+- `staging` (ID `12`): Branch control.
+- `production` (ID `13`): Branch control y Approval.
+- Rama permitida: `refs/heads/main`.
+- Aprobador de producción: `ajunquit@hotmail.com`, sin autoaprobación.
 
 ## Objetivo
 

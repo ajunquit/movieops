@@ -141,8 +141,9 @@ cambia el diseño, pero sí los tiempos observados.
 
 ## Paso 4 — Conectar Azure Pipelines con GitHub
 
-Este paso se realiza cuando `azure-pipelines/diagnostic.yml` ya exista en el
-repositorio; ese archivo se añadirá durante ADOP-1.
+Estado: **pendiente de consentimiento manual**. El archivo
+`azure-pipelines/diagnostic.yml` ya está implementado, pero debe estar publicado
+en `main` antes de registrar el pipeline.
 
 1. Ir a **Pipelines → New pipeline**.
 2. En **Where is your code?**, elegir **GitHub**.
@@ -158,8 +159,9 @@ repositorio; ese archivo se añadirá durante ADOP-1.
    Path: /azure-pipelines/diagnostic.yml
    ```
 
-8. Guardar el pipeline con el nombre `MovieOps-Diagnostic`. No ejecutarlo hasta
-   crear la service connection.
+8. Cuando la GitHub App quede asociada con `MovieOps`, salir sin guardar el
+   pipeline propuesto. El script del paso 03 lo registrará con nombre
+   `MovieOps-Diagnostic` y sin ejecutar el primer run.
 
 La GitHub App es necesaria para que Azure Pipelines trabaje con su propia
 identidad y publique GitHub Checks; no usar OAuth ni PAT.
