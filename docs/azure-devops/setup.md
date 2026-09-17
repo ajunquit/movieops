@@ -221,6 +221,20 @@ que esos recursos existan.
 
 ## Paso 6 — Crear los Azure DevOps Environments
 
+Estado: **script implementado; pendiente de ejecución**.
+
+Vista previa obligatoria:
+
+```powershell
+./scripts/azure-devops/02-configure-environments/configure-environments.ps1 -WhatIf
+```
+
+Aplicación, después de revisar la vista previa:
+
+```powershell
+./scripts/azure-devops/02-configure-environments/configure-environments.ps1
+```
+
 Ruta recomendada: `configure-environments.ps1` utilizará las APIs públicas. La
 UI se usa para verificar el resultado o como fallback:
 

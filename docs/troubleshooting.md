@@ -26,6 +26,8 @@ Formato de cada entrada: el de la sección 46 del plan — Síntoma, Impacto, Hi
 - [TS-09 — Contributor no alcanza: 403 al crear role assignments](#ts-09)
 - [TS-10 — Ser Owner de la suscripción no da acceso a los secretos del Key Vault](#ts-10)
 - [TS-11 — El Ingress tenía IP pública pero el NSG descartaba todo el tráfico](#ts-11)
+- [TS-12 — Apocalipsis eliminó la infraestructura, pero dejó el Resource Group](#ts-12)
+- [TS-13 — El bootstrap creó los Environments, pero falló al recibir cero checks](#ts-13)
 
 **Gotchas de herramientas y entorno** → [ver tabla al final](#gotchas)
 
@@ -778,6 +780,112 @@ grupo sobrevive, muestra sus recursos residuales y mantiene el job en rojo.
    debe comprobarse la ausencia del boundary que representa el ambiente.
 4. Todo recurso implícito creado por addons administrados debe evaluarse al
    habilitar y al retirar el addon.
+
+---
+
+<a name="ts-13"></a>
+## TS-13 — El bootstrap creó los Environments, pero falló al recibir cero checks
+
+**Azure DevOps parity · PowerShell / bootstrap idempotente**
+
+### Síntoma
+
+El paso 02 creó correctamente los tres Azure DevOps Environments y después
+terminó con este error:
+
+```text
+[CREATED] Environment 'dev' (11).
+[CREATED] Environment 'staging' (12).
+[CREATED] Environment 'production' (13).
+configure-environments.ps1: No se puede enlazar el argumento al parámetro
+"ExistingChecks" porque es una matriz vacía.
+```
+
+Los Environments aparecían en el portal, pero todavía no tenían Branch control
+ni aprobación de `production`.
+
+### Impacto
+
+El bootstrap quedó parcialmente completado. No se creó infraestructura Azure y
+no se ejecutó ningún deployment, pero los controles administrativos esperados
+aún no protegían los Environments.
+
+No era necesario eliminar los objetos creados: sus nombres e IDs ya eran un
+estado parcial válido que el script debía poder reanudar.
+
+### Hipótesis descartadas
+
+1. ¿La API devolvió un error al crear el Environment? → **No**: los IDs 11, 12
+   y 13 se devolvieron y los objetos eran visibles en el portal.
+2. ¿La cuenta no tenía permisos para administrar checks? → **No todavía**: el
+   fallo ocurrió durante el enlace de parámetros de PowerShell, antes del POST
+   del primer check.
+3. ¿La respuesta vacía era inválida? → **No**: cero checks es precisamente el
+   estado esperado de un Environment recién creado.
+
+### Evidencia
+
+La función recibía una colección tipada y obligatoria:
+
+```powershell
+param(
+    [Parameter(Mandatory)]
+    [object[]]$ExistingChecks
+)
+```
+
+La consulta de un Environment nuevo devolvía `@()`. PowerShell considera que un
+parámetro obligatorio no acepta una colección vacía salvo que el contrato lo
+indique explícitamente, por lo que nunca se ejecutó la lógica que interpreta
+`Count -eq 0` como “crear el check”.
+
+### Diagnóstico
+
+La API y el estado remoto eran correctos. El contrato del parámetro era más
+restrictivo que el dominio: `ExistingChecks` debía estar presente, pero también
+debía aceptar válidamente cero elementos.
+
+### Root Cause
+
+Faltaba `AllowEmptyCollection` en un parámetro array obligatorio. Se había
+modelado correctamente la rama interna para cero resultados, pero el binder de
+PowerShell rechazaba ese valor antes de entrar en la función.
+
+### Solución
+
+Se declaró explícitamente la colección vacía como válida:
+
+```powershell
+[Parameter(Mandatory)]
+[AllowEmptyCollection()]
+[object[]]$ExistingChecks
+```
+
+Después se repitió `-WhatIf` sobre el estado parcial. El script detectó:
+
+```text
+[EXISTS] Environment 'dev' (11).
+[EXISTS] Environment 'staging' (12).
+[EXISTS] Environment 'production' (13).
+What If: Create branch control on 'dev'
+What If: Create branch control on 'staging'
+What If: Create branch control on 'production'
+What If: Create production approval on 'production'
+```
+
+Esto confirmó tanto la corrección como la reanudación idempotente. La
+recuperación consiste únicamente en volver a ejecutar el script; no se borran
+ni recrean los Environments.
+
+### Acción preventiva
+
+1. Todo parámetro array debe definir el significado de cero elementos, no solo
+   su tipo y obligatoriedad.
+2. Probar los scripts de convergencia desde estado vacío, parcial y completo.
+3. Diseñar cada fase para descubrir antes de crear, de modo que una reejecución
+   continúe sin rollback destructivo.
+4. Ejecutar `-WhatIf` después de corregir un fallo parcial para comprobar el
+   plan restante antes de aplicar.
 
 ---
 

@@ -2,7 +2,17 @@
 
 ## Estado
 
-Implementado y validado estáticamente. Pendiente de ejecución por el operador.
+Completado y verificado el 16 de septiembre de 2026.
+
+Evidencia registrada:
+
+- Application ID: `8a598c74-ecf7-4d28-be14-5383e7f172d7`.
+- Service Principal Object ID: `4fbfb3ed-ea64-4c58-85b2-eec87d5f21fb`.
+- Service Connection ID: `245e217a-03ec-4db4-8dad-528a89d5f16c`.
+- Esquema: `WorkloadIdentityFederation`; estado `Ready`.
+- Una federated credential y cero credenciales de larga duración.
+- Roles `Contributor` y `Role Based Access Control Administrator` en la
+  suscripción del laboratorio.
 
 ## Objetivo
 
@@ -216,4 +226,3 @@ final. El script no imprime tokens ni secretos.
 
 No continuar automáticamente. Primero se valida la identidad y luego se crea
 `02-configure-environments`.
-

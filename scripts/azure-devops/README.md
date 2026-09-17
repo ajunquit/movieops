@@ -24,8 +24,8 @@ NN-nombre-del-paso/
 | Orden | Carpeta | Propósito | Estado |
 |---:|---|---|---|
 | 00 | [`00-bootstrap-project`](00-bootstrap-project/) | Crear/verificar el Project `MovieOps` | Completado |
-| 01 | [`01-service-connection-wif`](01-service-connection-wif/) | Identidad, service connection WIF y RBAC | Implementado; pendiente de ejecución |
-| 02 | `02-configure-environments` | Environments, branch control y approval | Pendiente |
+| 01 | [`01-service-connection-wif`](01-service-connection-wif/) | Identidad, service connection WIF y RBAC | Completado |
+| 02 | [`02-configure-environments`](02-configure-environments/) | Environments, branch control y approval | Implementado; pendiente de ejecución |
 | 03 | `03-configure-pipelines` | GitHub connection y registro de pipelines | Pendiente |
 | 04 | `04-configure-retention` | Política de retención | Pendiente |
 | 05 | `05-verify-bootstrap` | Verificación read-only y diagnóstico | Pendiente |

@@ -115,7 +115,9 @@ Estado: **completado y verificado**.
 - Comprueba capacidad de agentes y emite una acción manual si no existe parallel
   job alojado.
 
-### `configure-service-connection.ps1`
+### `01-service-connection-wif/configure-service-connection.ps1`
+
+Estado: **completado y verificado**.
 
 Automatiza el proceso WIF en el orden requerido:
 
@@ -135,7 +137,9 @@ privilegios de usuario.
 
 Referencia: [Automate Azure Resource Manager WIF service connections](https://learn.microsoft.com/en-us/azure/devops/pipelines/release/automate-service-connections?view=azure-devops).
 
-### `configure-environments.ps1`
+### `02-configure-environments/configure-environments.ps1`
+
+Estado: **implementado; pendiente de ejecución**.
 
 - Crea `dev`, `staging` y `production` si no existen.
 - Resuelve sus IDs.
