@@ -130,6 +130,7 @@ Ver [`scripts/github-actions-azure/README.md`](../../scripts/github-actions-azur
 | `01-service-principal-oidc` | `configure-service-principal.ps1` | App Registration + Service Principal + subjects OIDC inmutables + Contributor/RBAC Administrator para CI |
 | `02-keyvault-operator-access` | `grant-keyvault-operator-access.ps1` | Da acceso data-plane al operador humano |
 | `03-verify-bootstrap` | `verify-bootstrap.ps1` | Auditoría read-only de los pasos 00 y 01 |
+| `99-full-bootstrap` | `Invoke-Bootstrap.ps1` | Orquesta 00 → 01 → 03 en una sola ejecución |
 
 ## Arquitectura del flujo
 

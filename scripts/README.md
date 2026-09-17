@@ -40,6 +40,8 @@ Pasos disponibles:
   operación por-ambiente, repetible, no bootstrap de una sola vez.
 - [`03-verify-bootstrap`](github-actions-azure/03-verify-bootstrap/): auditoría
   read-only de los pasos `00` y `01`.
+- [`99-full-bootstrap`](github-actions-azure/99-full-bootstrap/): orquesta
+  `00` → `01` → `03` en una sola ejecución.
 
 Esta carpeta se llama `github-actions-azure` y no `azure` porque lo que la
 distingue de `azure-devops` es el orquestador de CI/CD, no el cloud — ambas

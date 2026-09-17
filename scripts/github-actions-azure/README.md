@@ -20,6 +20,7 @@ a AWS) sin tener que volver a renombrar nada.
 | [`01-service-principal-oidc`](01-service-principal-oidc/) | App Registration + Service Principal + federated credentials + roles de suscripción | Reconstruido — fusiona dos scripts previos |
 | [`02-keyvault-operator-access`](02-keyvault-operator-access/) | Acceso data-plane al Key Vault de un ambiente para un operador humano | Movido sin cambios de lógica |
 | [`03-verify-bootstrap`](03-verify-bootstrap/) | Auditoría read-only de los pasos 00 y 01 | Nuevo |
+| [`99-full-bootstrap`](99-full-bootstrap/) | Orquesta 00 → 01 → 03 en una sola ejecución | Nuevo |
 
 ## Por qué "ingeniería inversa" y no solo un rename
 
@@ -56,3 +57,6 @@ para poder correr**, así que no puede gestionarlos él mismo.
 Con `00`–`01` verificados por `03`, la identidad de CI está lista. El
 runbook completo de despliegue está en
 [`docs/deployment.md`](../../docs/deployment.md).
+
+Para reproducir todo el bootstrap con un solo comando (sin el paso `02`,
+que es por-ambiente), ver [`99-full-bootstrap`](99-full-bootstrap/).
