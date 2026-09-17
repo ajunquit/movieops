@@ -120,11 +120,16 @@ workflows principales legibles.
 
 ### Scripts de bootstrap Azure
 
-| Script | Propósito |
-|---|---|
-| `scripts/azure/sync-github-oidc-federated-credentials.ps1` | Sincroniza subjects OIDC inmutables |
-| `scripts/azure/grant-ci-subscription-roles.ps1` | Garantiza Contributor + RBAC Administrator para CI |
-| `scripts/azure/grant-keyvault-operator-access.ps1` | Da acceso data-plane al operador humano |
+Reestructurados el 16 de septiembre de 2026 en pasos numerados, siguiendo el
+mismo patrón que [`scripts/azure-devops/`](../../scripts/azure-devops/README.md).
+Ver [`scripts/github-actions-azure/README.md`](../../scripts/github-actions-azure/README.md).
+
+| Paso | Script | Propósito |
+|---|---|---|
+| `00-bootstrap-terraform-state` | `bootstrap-terraform-state.ps1` | Resource group + storage account + container del backend Terraform |
+| `01-service-principal-oidc` | `configure-service-principal.ps1` | App Registration + Service Principal + subjects OIDC inmutables + Contributor/RBAC Administrator para CI |
+| `02-keyvault-operator-access` | `grant-keyvault-operator-access.ps1` | Da acceso data-plane al operador humano |
+| `03-verify-bootstrap` | `verify-bootstrap.ps1` | Auditoría read-only de los pasos 00 y 01 |
 
 ## Arquitectura del flujo
 

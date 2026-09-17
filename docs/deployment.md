@@ -14,7 +14,7 @@ Verificar que las credenciales OIDC de Entra ID coincidan con el sujeto que
 GitHub emite actualmente. La sincronización es idempotente:
 
 ```powershell
-./scripts/azure/sync-github-oidc-federated-credentials.ps1
+./scripts/github-actions-azure/01-service-principal-oidc/configure-service-principal.ps1
 ```
 
 Este paso también debe repetirse si el repositorio se crea, renombra o
@@ -51,7 +51,7 @@ Para sembrar la key de TMDB necesitás acceso de datos al vault. Ojo: **ser Owne
 
 ```powershell
 # Una sola vez por ambiente: te asigna Key Vault Secrets Officer sobre el vault
-./scripts/azure/grant-keyvault-operator-access.ps1 -Environment dev
+./scripts/github-actions-azure/02-keyvault-operator-access/grant-keyvault-operator-access.ps1 -Environment dev
 
 # Sembrar la key (el valor nunca pasa por GitHub ni por el repo)
 az keyvault secret set `

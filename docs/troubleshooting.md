@@ -424,7 +424,7 @@ obsoleto, en lugar de consultar el sujeto efectivo del repositorio.
 Se automatizó la sincronización de las tres credenciales:
 
 ```powershell
-./scripts/azure/sync-github-oidc-federated-credentials.ps1
+./scripts/github-actions-azure/01-service-principal-oidc/configure-service-principal.ps1
 ```
 
 El script consulta `sub_claim_prefix` en GitHub, localiza
@@ -493,11 +493,11 @@ El service principal de CI tenía permisos para **crear infraestructura** pero n
 
 ### Solución
 Se agregó el rol **`Role Based Access Control Administrator`**, que es el mínimo privilegio para esto. El fix está scripteado e idempotente en
-[`scripts/azure/grant-ci-subscription-roles.ps1`](../scripts/azure/grant-ci-subscription-roles.ps1):
+[`scripts/github-actions-azure/01-service-principal-oidc/configure-service-principal.ps1`](../scripts/github-actions-azure/01-service-principal-oidc/configure-service-principal.ps1):
 
 ```powershell
-./scripts/azure/grant-ci-subscription-roles.ps1 -WhatIf   # previsualizar
-./scripts/azure/grant-ci-subscription-roles.ps1           # aplicar y verificar
+./scripts/github-actions-azure/01-service-principal-oidc/configure-service-principal.ps1 -WhatIf   # previsualizar
+./scripts/github-actions-azure/01-service-principal-oidc/configure-service-principal.ps1           # aplicar y verificar
 ```
 
 Por qué ese rol y no otro:
@@ -514,7 +514,7 @@ Como los otros 15 recursos ya estaban en el state, el siguiente `apply` solo tuv
 
 ### Acción preventiva
 1. **Si tu Terraform contiene algún `azurerm_role_assignment`, el principal que lo ejecuta necesita RBAC Administrator, no alcanza Contributor.** Es el error más común al automatizar Azure con CI.
-2. **Todo fix aplicado a mano sobre Azure queda scripteado en [`scripts/azure/`](../scripts/README.md).** Este se resolvió originalmente con un `az role assignment create` suelto desde una terminal: funcionó, pero no dejó rastro reproducible. Si mañana hay que rehacer la suscripción desde cero, un comando que vivió solo en el historial de una shell no existe.
+2. **Todo fix aplicado a mano sobre Azure queda scripteado en [`scripts/github-actions-azure/`](../scripts/github-actions-azure/README.md).** Este se resolvió originalmente con un `az role assignment create` suelto desde una terminal: funcionó, pero no dejó rastro reproducible. Si mañana hay que rehacer la suscripción desde cero, un comando que vivió solo en el historial de una shell no existe. (El propio bootstrap de la identidad OIDC tenía el mismo problema y se reconstruyó por ingeniería inversa en el paso [`01-service-principal-oidc`](../scripts/github-actions-azure/01-service-principal-oidc/).)
 3. **Leer el código HTTP antes que el mensaje:** 401 = identidad no válida (revisar OIDC, TS-08); 403 = identidad válida, permiso faltante (revisar roles). Diagnósticos completamente distintos.
 4. **Pendiente de endurecer:** un principal que puede escribir role assignments a nivel suscripción puede auto-asignarse Owner. El endurecimiento profesional es agregar una *condition* al role assignment que restrinja **qué roles** puede asignar (solo `AcrPull` y `Key Vault Secrets Officer`). Aceptable en este lab; no lo sería en producción.
 
@@ -567,10 +567,10 @@ La causa concreta en nuestro caso: el módulo de Terraform asigna `Key Vault Sec
 Un permiso definido como "quien ejecuta" en vez de "quién necesita acceso", combinado con la suposición de que Owner cubre todo.
 
 ### Solución
-Script idempotente [`scripts/azure/grant-keyvault-operator-access.ps1`](../scripts/azure/grant-keyvault-operator-access.ps1), que asigna el rol de data plane al operador:
+Script idempotente [`scripts/github-actions-azure/02-keyvault-operator-access/grant-keyvault-operator-access.ps1`](../scripts/github-actions-azure/02-keyvault-operator-access/grant-keyvault-operator-access.ps1), que asigna el rol de data plane al operador:
 
 ```powershell
-./scripts/azure/grant-keyvault-operator-access.ps1 -Environment dev
+./scripts/github-actions-azure/02-keyvault-operator-access/grant-keyvault-operator-access.ps1 -Environment dev
 ```
 
 Y, aprovechando el hallazgo, se replanteó el diseño completo de secretos: en vez de que un humano lea la password del vault para copiarla a GitHub Secrets, ahora **`deploy.yml` lee los secretos directamente del Key Vault** en cada despliegue. Una copia menos de la password dando vueltas y un paso manual menos en el runbook.

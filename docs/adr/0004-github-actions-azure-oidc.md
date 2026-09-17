@@ -23,7 +23,11 @@ formato de sujeto **inmutable** `OWNER@OWNER-ID/REPO@REPO-ID`. Los IDs evitan qu
 un rename, una transferencia o la reutilización futura de un nombre permita que
 otro repositorio herede accidentalmente la confianza. El prefijo efectivo no se
 mantiene hardcodeado en el procedimiento operativo: se consulta y sincroniza con
-[`scripts/azure/sync-github-oidc-federated-credentials.ps1`](../../scripts/azure/sync-github-oidc-federated-credentials.ps1).
+[`scripts/github-actions-azure/01-service-principal-oidc/configure-service-principal.ps1`](../../scripts/github-actions-azure/01-service-principal-oidc/configure-service-principal.ps1),
+que además crea la App Registration y el Service Principal si no existen, y
+otorga los roles de suscripción — la App Registration y el Service Principal
+se habían creado originalmente a mano y se reconstruyeron por ingeniería
+inversa en ese mismo script.
 
 The service principal has `Contributor` at the subscription scope (see Consequences — this is a lab-scope simplification, not the end state). Workflows set `permissions: id-token: write` and export `ARM_CLIENT_ID` / `ARM_TENANT_ID` / `ARM_SUBSCRIPTION_ID` / `ARM_USE_OIDC=true` as env vars — the `azurerm` Terraform provider picks these up automatically and exchanges the GitHub-issued token for an Azure AD token itself; no `azure/login` action step is needed for Terraform's own auth.
 
@@ -42,12 +46,12 @@ Después de crear, renombrar o transferir el repositorio, o ante
 `AADSTS700213`, ejecutar:
 
 ```powershell
-./scripts/azure/sync-github-oidc-federated-credentials.ps1
+./scripts/github-actions-azure/01-service-principal-oidc/configure-service-principal.ps1
 ```
 
 El script obtiene `sub_claim_prefix` desde GitHub, crea o actualiza las tres
 credenciales y verifica sus sujetos finales. Para inspeccionar primero:
 
 ```powershell
-./scripts/azure/sync-github-oidc-federated-credentials.ps1 -WhatIf
+./scripts/github-actions-azure/01-service-principal-oidc/configure-service-principal.ps1 -WhatIf
 ```

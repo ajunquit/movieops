@@ -88,7 +88,7 @@ Assert-LastExitCode 'Role assignment lookup'
 $assignments = @($assignmentsJson | ConvertFrom-Json)
 
 if ($assignments | Where-Object { $_.role -ceq $Role -and $_.scope -ceq $scope }) {
-    Write-Host "[OK] '$Role' is already assigned on '$VaultName'."
+    Write-Host "[EXISTS] '$Role' already assigned on '$VaultName'."
     return
 }
 

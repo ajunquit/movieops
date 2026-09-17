@@ -10,12 +10,12 @@ Terraform's `azurerm` backend needs a Storage Account + blob container to exist 
 
 ## Decision
 
-The state backend (`rg-movieops-tfstate` resource group, `stmovieopstfstate` storage account, `tfstate` container) is created once, by hand, via `az cli` — not by a Terraform run. It is **not** destroyed when environments are torn down, and it is **not** managed by any `terraform/environments/*` configuration.
+The state backend (`rg-movieops-tfstate` resource group, `stmovieopstfstate` storage account, `tfstate` container) is created once, outside any Terraform run. It is **not** destroyed when environments are torn down, and it is **not** managed by any `terraform/environments/*` configuration.
 
-```text
-az group create --name rg-movieops-tfstate --location eastus2
-az storage account create --name stmovieopstfstate --resource-group rg-movieops-tfstate --sku Standard_LRS
-az storage container create --name tfstate --account-name stmovieopstfstate
+It was originally created by hand, with raw `az cli` commands that left no reproducible trace. That gap was closed by reverse-engineering it into an idempotent script — [`scripts/github-actions-azure/00-bootstrap-terraform-state/bootstrap-terraform-state.ps1`](../../scripts/github-actions-azure/00-bootstrap-terraform-state/bootstrap-terraform-state.ps1) — which now owns this bootstrap:
+
+```powershell
+./scripts/github-actions-azure/00-bootstrap-terraform-state/bootstrap-terraform-state.ps1
 ```
 
 Each environment's `backend.tf` points at this same storage account, with a distinct blob key per environment (`dev.terraform.tfstate`, `staging.terraform.tfstate`, `production.terraform.tfstate`), so all environments share one bootstrap but never share state files.
