@@ -2,8 +2,8 @@
 
 ## Estado
 
-En ejecución. **ADOP-0 está completado y ADOP-1 es el siguiente hito**, después
-del Sprint 9 validado en Azure y antes del Sprint 10 (Argo CD). La baseline y
+En ejecución. **ADOP-0 y ADOP-1 están completados; ADOP-2 es el siguiente
+hito**, después del Sprint 9 validado en Azure y antes del Sprint 10 (Argo CD). La baseline y
 matriz operativa están en
 [`docs/azure-devops/parity-matrix.md`](../azure-devops/parity-matrix.md).
 
@@ -254,7 +254,7 @@ están registrados en
 organización `https://dev.azure.com/ajunquit` fue confirmada mediante Azure
 DevOps CLI.
 
-### ADOP-1 — Bootstrap seguro de Azure DevOps 🟡
+### ADOP-1 — Bootstrap seguro de Azure DevOps ✅
 
 Objetivo: conectar Azure DevOps con GitHub y Azure sin secretos persistentes.
 
@@ -275,6 +275,11 @@ Criterio de salida:
 
 - Un pipeline de diagnóstico obtiene identidad Azure sin client secret y puede
   leer subscription/resource groups, pero no modifica infraestructura.
+
+Estado final: `MovieOps-Diagnostic` run `59` terminó verde en `main`; la
+auditoría read-only validó `21/21` controles sin fallos. Los pasos `00–05` y el
+orquestador reanudable `99-full-bootstrap` quedaron implementados y
+documentados.
 
 ### ADOP-2 — CI parity
 

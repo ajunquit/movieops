@@ -2,7 +2,8 @@
 
 ## Estado
 
-Implementado. Pendiente de ejecución final por el operador.
+Completado y verificado el 16 de septiembre de 2026: `21` controles, `21` PASS,
+`0` FAIL.
 
 ## Objetivo
 

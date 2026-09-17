@@ -170,9 +170,9 @@ Referencia: [Build GitHub repositories with Azure Pipelines](https://learn.micro
 
 ### Evidencia de salida
 
-- [ ] GitHub muestra Azure Pipelines entre las aplicaciones instaladas.
-- [ ] La instalación tiene acceso únicamente a `movieops`.
-- [ ] Azure DevOps muestra el pipeline apuntando al YAML versionado.
+- [x] GitHub muestra Azure Pipelines entre las aplicaciones instaladas.
+- [x] La instalación tiene acceso únicamente a `movieops`.
+- [x] Azure DevOps muestra el pipeline apuntando al YAML versionado.
 
 ## Paso 5 — Crear la service connection con WIF
 
@@ -217,13 +217,13 @@ que esos recursos existan.
 
 ### Evidencia de salida
 
-- [ ] La service connection indica Workload Identity Federation.
-- [ ] No existe client secret asociado al pipeline.
-- [ ] La opción global de autorización permanece desactivada.
+- [x] La service connection indica Workload Identity Federation.
+- [x] No existe client secret asociado al pipeline.
+- [x] La opción global de autorización permanece desactivada.
 
 ## Paso 6 — Crear los Azure DevOps Environments
 
-Estado: **script implementado; pendiente de ejecución**.
+Estado: **completado y verificado**.
 
 Vista previa obligatoria:
 
@@ -263,13 +263,13 @@ Referencias: [Environments](https://learn.microsoft.com/en-us/azure/devops/pipel
 
 ### Evidencia de salida
 
-- [ ] Existen los tres Environments.
-- [ ] `refs/heads/main` es la única rama autorizada para deploy.
-- [ ] `production` exige un aprobador externo al YAML.
+- [x] Existen los tres Environments.
+- [x] `refs/heads/main` es la única rama autorizada para deploy.
+- [x] `production` exige un aprobador externo al YAML.
 
 ## Paso 7 — Configurar retención del proyecto
 
-Estado: **script implementado; pendiente de ejecución**.
+Estado: **completado y verificado**.
 
 Vista previa:
 
@@ -303,7 +303,7 @@ Referencia: [Retention policies](https://learn.microsoft.com/en-us/azure/devops/
 
 ## Paso 8 — Ejecutar el pipeline de diagnóstico
 
-Estado: **pipeline ejecutado correctamente; auditoría final pendiente**.
+Estado: **pipeline y auditoría final ejecutados correctamente**.
 
 El pipeline `MovieOps-Diagnostic` deberá:
 
@@ -324,15 +324,15 @@ El pipeline `MovieOps-Diagnostic` deberá:
 - [x] El pipeline termina verde (`MovieOps-Diagnostic`, run `59`).
 - [x] Los logs muestran tenant/subscription correctos.
 - [x] No se almacenó ni imprimió ningún secreto.
-- [ ] Los scripts de bootstrap/verify reproducen la configuración comprobable.
+- [x] Los scripts de bootstrap/verify reproducen la configuración comprobable.
 
-Para cerrar el último control:
+Comando de auditoría reproducible:
 
 ```powershell
 ./scripts/azure-devops/05-verify-bootstrap/verify-bootstrap.ps1
 ```
 
-No continuar con CI hasta obtener cero fallos en esa auditoría.
+La auditoría final obtuvo `21/21` PASS y `0` FAIL; ADOP-2 queda habilitado.
 
 ## Paso 9 — Crear `MovieOps-CI`
 
@@ -477,6 +477,8 @@ Cada fallo orgánico nuevo se registra en
 
 ## Qué hacemos ahora
 
-Los pasos de mutación 00–04 y el run diagnóstico están completos. La siguiente
-acción es ejecutar `05-verify-bootstrap/verify-bootstrap.ps1`. Una auditoría con
-cero fallos cierra ADOP-1 y habilita el Paso 9 / ADOP-2: CI parity.
+ADOP-1 está cerrado: los pasos 00–04, el run diagnóstico y la auditoría final
+`21/21` están completos. El orquestador
+`99-full-bootstrap/Invoke-Bootstrap.ps1` reúne y permite reproducir todo el
+bootstrap de forma idempotente. La siguiente fase es el Paso 9 / ADOP-2: CI
+parity.

@@ -11,10 +11,10 @@ orquestador CI/CD durante las pruebas de paridad.
 |---|---|---|
 | [Baseline y matriz de paridad](parity-matrix.md) | ADOP-0 | Completado |
 | [Runbook paso a paso](setup.md) | ADOP-1–ADOP-7 | Activo: guía operativa completa |
-| [Estrategia de automatización](automation.md) | ADOP-1 | Siguiente: scripts idempotentes + gates humanos |
+| [Estrategia de automatización](automation.md) | ADOP-1 | Completado: pasos 00–05 + orquestador 99 |
 | `pipeline-design.md` | ADOP-2–ADOP-5 | Pendiente |
 | `operations.md` | ADOP-3–ADOP-7 | Pendiente |
-| `troubleshooting.md` | Transversal | Se creará con el primer incidente propio del track |
+| [Troubleshooting general](../troubleshooting.md) | Transversal | Activo: incidentes y correcciones del track |
 
 ## Documentos rectores
 

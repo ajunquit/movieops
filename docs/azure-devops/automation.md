@@ -81,11 +81,13 @@ scripts/
     └── 99-full-bootstrap/
 ```
 
-### `Invoke-Bootstrap.ps1`
+### `99-full-bootstrap/Invoke-Bootstrap.ps1`
+
+Estado: **implementado después de validar individualmente los pasos 00–05**.
 
 Orquestador principal. Valida prerrequisitos, ejecuta los scripts en orden,
-detiene el proceso en el gate de consentimiento de GitHub App y puede reanudarse
-sin duplicar recursos.
+detiene el proceso en los gates de consentimiento de GitHub App y primer run
+diagnóstico verde, y puede reanudarse sin duplicar recursos.
 
 Interfaz prevista:
 
@@ -139,7 +141,7 @@ Referencia: [Automate Azure Resource Manager WIF service connections](https://le
 
 ### `02-configure-environments/configure-environments.ps1`
 
-Estado: **implementado; pendiente de ejecución**.
+Estado: **completado y verificado**.
 
 - Crea `dev`, `staging` y `production` si no existen.
 - Resuelve sus IDs.
@@ -153,8 +155,9 @@ Referencias: [Environments REST API](https://learn.microsoft.com/en-us/rest/api/
 
 ### `03-configure-pipelines/configure-pipelines.ps1`
 
-Estado: **implementado para `MovieOps-Diagnostic`; pendiente del gate manual de
-GitHub App, publicación en `main` y ejecución**.
+Estado: **completado y verificado para `MovieOps-Diagnostic`**. La conexión
+GitHub App está lista y el run diagnóstico `59` terminó correctamente en
+`main`.
 
 Se ejecuta después del consentimiento de GitHub App:
 
@@ -174,9 +177,9 @@ Pipelines objetivo:
 | `MovieOps-CD` | `azure-pipelines/cd.yml` |
 | `MovieOps-Apocalipsis` | `azure-pipelines/apocalipsis.yml` |
 
-### `configure-retention.ps1`
+### `04-configure-retention/configure-retention.ps1`
 
-Estado: **implementado; pendiente de ejecución**.
+Estado: **completado y verificado**.
 
 Aplica o verifica la política acordada:
 
@@ -190,10 +193,10 @@ No utilizará endpoints internos no documentados. Si una opción solo está
 disponible en Project Settings, el script falla de forma accionable o reporta
 `MANUAL ACTION REQUIRED` con el valor exacto; nunca simula éxito.
 
-### `verify-bootstrap.ps1`
+### `05-verify-bootstrap/verify-bootstrap.ps1`
 
-Implementado en `05-verify-bootstrap/verify-bootstrap.ps1`. Pendiente de la
-auditoría final del operador.
+Estado: **completado y verificado**. La auditoría final produjo `21/21` PASS y
+`0` FAIL.
 
 Es read-only y constituye la prueba final de ADOP-1:
 
@@ -248,8 +251,9 @@ FASE 3 — Verificación
 verify-bootstrap + MovieOps-Diagnostic read-only
 ```
 
-`Invoke-Bootstrap.ps1` podrá ejecutarse nuevamente después del gate manual; al
-detectar que los recursos de Fase 1 ya existen, continuará desde Fase 2.
+`99-full-bootstrap/Invoke-Bootstrap.ps1` puede ejecutarse nuevamente después de
+cualquiera de los gates manuales; al detectar los recursos existentes, los
+verifica y continúa sin duplicarlos.
 
 ## Permisos requeridos al operador
 
