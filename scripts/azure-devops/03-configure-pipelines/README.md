@@ -2,8 +2,16 @@
 
 ## Estado
 
-Implementado. Pendiente del gate manual de GitHub App, commit/push y ejecución
-por el operador.
+Completado y verificado el 16 de septiembre de 2026.
+
+Evidencia registrada:
+
+- GitHub App connection: `github.com_ajunquit`
+  (`92dad4f9-b481-49c8-aef4-b102a318b3b2`).
+- Pipeline `MovieOps-Diagnostic`, ID `8`.
+- Autorización WIF exclusiva para el pipeline; acceso global desactivado.
+- Run `59` en `refs/heads/main`: `succeeded`.
+- Commit validado: `0c4936d7ef566ed7e4ad5ec7a5333cea7811e402`.
 
 ## Objetivo
 

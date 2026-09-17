@@ -176,6 +176,8 @@ Pipelines objetivo:
 
 ### `configure-retention.ps1`
 
+Estado: **implementado; pendiente de ejecución**.
+
 Aplica o verifica la política acordada:
 
 - Runs y logs: 30 días.

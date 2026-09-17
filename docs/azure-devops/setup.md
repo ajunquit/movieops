@@ -269,6 +269,20 @@ Referencias: [Environments](https://learn.microsoft.com/en-us/azure/devops/pipel
 
 ## Paso 7 — Configurar retención del proyecto
 
+Estado: **script implementado; pendiente de ejecución**.
+
+Vista previa:
+
+```powershell
+./scripts/azure-devops/04-configure-retention/configure-retention.ps1 -WhatIf
+```
+
+Aplicación:
+
+```powershell
+./scripts/azure-devops/04-configure-retention/configure-retention.ps1
+```
+
 Ruta recomendada: `configure-retention.ps1` aplicará o verificará estos valores
 y reportará cualquier acción que la API no exponga de forma pública.
 
