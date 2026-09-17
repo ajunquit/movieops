@@ -28,6 +28,7 @@ Formato de cada entrada: el de la sección 46 del plan — Síntoma, Impacto, Hi
 - [TS-11 — El Ingress tenía IP pública pero el NSG descartaba todo el tráfico](#ts-11)
 - [TS-12 — Apocalipsis eliminó la infraestructura, pero dejó el Resource Group](#ts-12)
 - [TS-13 — El bootstrap creó los Environments, pero falló al recibir cero checks](#ts-13)
+- [TS-14 — La ausencia de acceso global provocó un falso fallo de verificación](#ts-14)
 
 **Gotchas de herramientas y entorno** → [ver tabla al final](#gotchas)
 
@@ -886,6 +887,93 @@ ni recrean los Environments.
    continúe sin rollback destructivo.
 4. Ejecutar `-WhatIf` después de corregir un fallo parcial para comprobar el
    plan restante antes de aplicar.
+
+---
+
+<a name="ts-14"></a>
+## TS-14 — La ausencia de acceso global provocó un falso fallo de verificación
+
+**Azure DevOps parity · Pipeline Permissions / PowerShell StrictMode**
+
+### Síntoma
+
+El paso 03 creó correctamente el pipeline y autorizó la service connection solo
+para él, pero falló en la verificación final:
+
+```text
+[CREATED] Pipeline 'MovieOps-Diagnostic' (8); first run skipped.
+[UPDATED] 'sc-movieops-azure-wif' authorized only for 'MovieOps-Diagnostic'.
+No se encuentra la propiedad "allPipelines" en este objeto.
+```
+
+### Impacto
+
+El resultado remoto era válido: el pipeline ID 8 existía y tenía autorización
+individual. Sin embargo, el script terminó en rojo y no pudo emitir su evidencia
+final ni indicar la ejecución manual del diagnóstico.
+
+No hubo exposición adicional de permisos y no se ejecutó automáticamente el
+pipeline.
+
+### Hipótesis descartadas
+
+1. ¿Falló la creación de `MovieOps-Diagnostic`? → **No**: Azure DevOps devolvió
+   el ID 8.
+2. ¿Falló la autorización WIF? → **No**: el PATCH finalizó y la respuesta de
+   lectura contiene el pipeline en `pipelines` con `authorized: true`.
+3. ¿La conexión fue autorizada globalmente? → **No**: la API no devolvió
+   `allPipelines`, que es cómo representa la ausencia de esa concesión.
+
+### Evidencia
+
+La primera versión hacía acceso directo:
+
+```powershell
+$finalPermissions.allPipelines
+```
+
+Con `Set-StrictMode -Version Latest`, PowerShell genera una excepción cuando un
+`PSCustomObject` no contiene la propiedad solicitada. La API usa una respuesta
+dispersa: las propiedades opcionales pueden omitirse en lugar de devolverse con
+valor `$null` o `authorized: false`.
+
+### Diagnóstico
+
+Fue un falso negativo del verificador. La ausencia de `allPipelines` no era
+drift ni un error del servicio; significaba que **Grant access permission to all
+pipelines** permanecía desactivado, exactamente como exige el diseño.
+
+### Root Cause
+
+El script asumía un response shape completo para una API que omite campos
+opcionales. Esa suposición era incompatible con StrictMode.
+
+### Solución
+
+La propiedad se consulta de forma segura antes de inspeccionar su valor:
+
+```powershell
+$allPipelinesProperty = $finalPermissions.PSObject.Properties['allPipelines']
+$allPipelinesAuthorization = if ($null -ne $allPipelinesProperty) {
+    $allPipelinesProperty.Value
+} else {
+    $null
+}
+```
+
+Solo se considera un fallo cuando la propiedad existe y su campo `authorized`
+es verdadero. La recuperación es reejecutar el mismo script; la idempotencia
+reutiliza el pipeline y el permiso específico ya creados.
+
+### Acción preventiva
+
+1. Tratar las propiedades opcionales de respuestas REST como ausentes, no solo
+   como `$null`.
+2. Bajo StrictMode, usar `PSObject.Properties['nombre']` antes de leer campos
+   opcionales.
+3. Probar verificadores tanto con flags verdaderos como con campos omitidos.
+4. Separar claramente fallo de mutación y fallo de post-verificación para que
+   la recuperación nunca empiece eliminando recursos válidos.
 
 ---
 

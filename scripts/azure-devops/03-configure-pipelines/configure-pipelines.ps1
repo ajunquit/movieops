@@ -361,7 +361,14 @@ $finalPipelinePermission = @($finalPermissions.pipelines | Where-Object {
 if ($finalPipelinePermission.Count -ne 1) {
     throw "Final verification failed: '$AzureServiceConnectionName' is not authorized for '$PipelineName'."
 }
-if ($null -ne $finalPermissions.allPipelines -and [bool]$finalPermissions.allPipelines.authorized) {
+$allPipelinesProperty = $finalPermissions.PSObject.Properties['allPipelines']
+$allPipelinesAuthorization = if ($null -ne $allPipelinesProperty) {
+    $allPipelinesProperty.Value
+}
+else {
+    $null
+}
+if ($null -ne $allPipelinesAuthorization -and [bool]$allPipelinesAuthorization.authorized) {
     throw "Final verification failed: '$AzureServiceConnectionName' is authorized for all pipelines."
 }
 

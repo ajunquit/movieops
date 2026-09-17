@@ -177,6 +177,27 @@ Debe informar `EXISTS` para el pipeline y su autorización.
 
 ## Resolución de problemas
 
+### No se encuentra la propiedad `allPipelines`
+
+Síntoma después de crear el pipeline y autorizar la conexión:
+
+```text
+[CREATED] Pipeline 'MovieOps-Diagnostic' (...); first run skipped.
+[UPDATED] 'sc-movieops-azure-wif' authorized only for 'MovieOps-Diagnostic'.
+No se encuentra la propiedad "allPipelines" en este objeto.
+```
+
+La API de Pipeline Permissions omite `allPipelines` cuando no existe una
+autorización global. Ese es precisamente el estado seguro esperado, pero la
+primera versión accedía directamente a la propiedad bajo `Set-StrictMode` y
+fallaba durante la verificación final.
+
+La versión actual consulta primero `PSObject.Properties`; una propiedad ausente
+se interpreta como autorización global desactivada. No se debe eliminar el
+pipeline ni revocar su autorización específica. Basta con volver a ejecutar el
+script: encontrará `MovieOps-Diagnostic`, comprobará el permiso existente y
+completará la verificación.
+
 ### No se encontró `InstallationToken`
 
 La GitHub App todavía no está asociada con `MovieOps`, o se creó una conexión
