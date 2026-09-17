@@ -2,9 +2,11 @@
 
 ## Estado
 
-Implementado después de validar individualmente los pasos 00–05. Su recorrido
-integral en `-WhatIf` fue validado el 16 de septiembre de 2026 sin errores ni
-mutaciones.
+Completado. Después de validar individualmente los pasos 00–05, su recorrido
+integral pasó en `-WhatIf` y en modo apply el 16 de septiembre de 2026.
+
+La ejecución final completó los pasos 00–05, ambos gates y la auditoría
+read-only sin fallos.
 
 ## Objetivo
 

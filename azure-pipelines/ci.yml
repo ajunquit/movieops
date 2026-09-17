@@ -1,0 +1,46 @@
+trigger:
+  batch: true
+  branches:
+    include:
+      - main
+
+pr:
+  autoCancel: true
+  branches:
+    include:
+      - main
+
+name: ci-$(Date:yyyyMMdd)-$(Rev:r)
+
+variables:
+  # Matches the default engine used by aquasecurity/trivy-action@v0.36.0.
+  trivyImage: aquasec/trivy:0.70.0
+
+stages:
+  - stage: Validate
+    displayName: Validate application
+    jobs:
+      - template: templates/backend-ci.yml
+      - template: templates/frontend-ci.yml
+
+      - job: QualityGate
+        displayName: Quality gate
+        dependsOn:
+          - BackendCI
+          - FrontendCI
+        condition: succeeded()
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - checkout: none
+          - bash: |
+              set -euo pipefail
+              echo "Backend and frontend CI passed for $(Build.SourceVersion)."
+            displayName: Confirm all validation jobs passed
+
+  - stage: Package
+    displayName: Build immutable images
+    dependsOn: Validate
+    condition: succeeded()
+    jobs:
+      - template: templates/docker-build.yml

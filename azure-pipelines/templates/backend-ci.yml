@@ -1,0 +1,71 @@
+jobs:
+  - job: BackendCI
+    displayName: Backend CI (.NET 10)
+    timeoutInMinutes: 30
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+      - checkout: self
+        displayName: Checkout GitHub repository
+        fetchDepth: 1
+        persistCredentials: false
+
+      - task: UseDotNet@2
+        displayName: Use .NET SDK 10
+        inputs:
+          packageType: sdk
+          version: 10.0.x
+
+      - bash: dotnet restore MovieOps.slnx
+        displayName: Restore backend dependencies
+        workingDirectory: app/backend
+
+      - bash: dotnet format MovieOps.slnx --no-restore --verify-no-changes
+        displayName: Verify backend formatting
+        workingDirectory: app/backend
+
+      - bash: dotnet build MovieOps.slnx --no-restore --configuration Release
+        displayName: Build backend
+        workingDirectory: app/backend
+
+      - bash: |
+          dotnet test tests/MovieOps.UnitTests \
+            --no-build \
+            --configuration Release \
+            --logger "trx;LogFileName=backend-unit.trx" \
+            --results-directory "$(Agent.TempDirectory)/backend-tests/unit" \
+            --collect:"XPlat Code Coverage"
+        displayName: Run backend unit tests
+        workingDirectory: app/backend
+
+      - bash: |
+          dotnet test tests/MovieOps.IntegrationTests \
+            --no-build \
+            --configuration Release \
+            --logger "trx;LogFileName=backend-integration.trx" \
+            --results-directory "$(Agent.TempDirectory)/backend-tests/integration"
+        displayName: Run backend integration tests
+        workingDirectory: app/backend
+
+      - task: PublishTestResults@2
+        displayName: Publish backend test results
+        condition: succeededOrFailed()
+        inputs:
+          testResultsFormat: VSTest
+          testResultsFiles: "**/*.trx"
+          searchFolder: $(Agent.TempDirectory)/backend-tests
+          mergeTestResults: true
+          failTaskOnFailedTests: true
+          testRunTitle: Backend tests
+
+      - task: PublishCodeCoverageResults@2
+        displayName: Publish backend coverage
+        condition: succeededOrFailed()
+        inputs:
+          summaryFileLocation: $(Agent.TempDirectory)/backend-tests/**/coverage.cobertura.xml
+          failIfCoverageEmpty: false
+
+      - template: security-scan.yml
+        parameters:
+          displayName: Scan backend dependencies
+          target: app/backend

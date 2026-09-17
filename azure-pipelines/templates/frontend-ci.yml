@@ -1,0 +1,62 @@
+jobs:
+  - job: FrontendCI
+    displayName: Frontend CI (Angular / Node 22)
+    timeoutInMinutes: 30
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+      - checkout: self
+        displayName: Checkout GitHub repository
+        fetchDepth: 1
+        persistCredentials: false
+
+      - task: NodeTool@0
+        displayName: Use Node.js 22
+        inputs:
+          versionSpec: 22.x
+
+      - bash: npm ci
+        displayName: Install frontend dependencies
+        workingDirectory: app/frontend
+
+      - bash: npx tsc --noEmit -p tsconfig.app.json
+        displayName: Type-check frontend
+        workingDirectory: app/frontend
+
+      - bash: |
+          npx ng test \
+            --watch=false \
+            --coverage \
+            --coverage-reporters=cobertura \
+            --coverage-reporters=html \
+            --reporters=junit \
+            --output-file=coverage/junit.xml
+        displayName: Run frontend unit tests
+        workingDirectory: app/frontend
+
+      - task: PublishTestResults@2
+        displayName: Publish frontend test results
+        condition: succeededOrFailed()
+        inputs:
+          testResultsFormat: JUnit
+          testResultsFiles: junit.xml
+          searchFolder: $(Build.SourcesDirectory)/app/frontend/coverage
+          failTaskOnFailedTests: true
+          testRunTitle: Frontend tests
+
+      - task: PublishCodeCoverageResults@2
+        displayName: Publish frontend coverage
+        condition: succeededOrFailed()
+        inputs:
+          summaryFileLocation: $(Build.SourcesDirectory)/app/frontend/coverage/frontend/cobertura-coverage.xml
+          pathToSources: $(Build.SourcesDirectory)/app/frontend
+          failIfCoverageEmpty: false
+
+      - bash: npx ng build --configuration production
+        displayName: Build frontend for production
+        workingDirectory: app/frontend
+
+      - template: security-scan.yml
+        parameters:
+          displayName: Scan frontend dependencies
+          target: app/frontend

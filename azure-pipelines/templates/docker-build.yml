@@ -1,0 +1,91 @@
+jobs:
+  - job: BuildImages
+    displayName: Build immutable container images
+    timeoutInMinutes: 30
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+      - checkout: self
+        displayName: Checkout exact source commit
+        fetchDepth: 1
+        persistCredentials: false
+
+      - bash: |
+          set -euo pipefail
+
+          image_tag="sha-$(Build.SourceVersion)"
+          backend_image="movieops-api:${image_tag}"
+          frontend_image="movieops-frontend:${image_tag}"
+
+          docker build \
+            --file app/backend/Dockerfile \
+            --label "org.opencontainers.image.revision=$(Build.SourceVersion)" \
+            --tag "$backend_image" \
+            app/backend
+
+          docker build \
+            --file app/frontend/Dockerfile \
+            --label "org.opencontainers.image.revision=$(Build.SourceVersion)" \
+            --tag "$frontend_image" \
+            app/frontend
+
+          echo "##vso[task.setvariable variable=imageTag]$image_tag"
+          echo "##vso[task.setvariable variable=backendImage]$backend_image"
+          echo "##vso[task.setvariable variable=frontendImage]$frontend_image"
+        displayName: Build backend and frontend images
+
+      - bash: |
+          set -euo pipefail
+          docker image inspect "$(backendImage)" >/dev/null
+          docker image inspect "$(frontendImage)" >/dev/null
+          echo "Built $(backendImage) and $(frontendImage)."
+        displayName: Verify local images
+
+      - bash: |
+          set -euo pipefail
+          artifact_dir="$(Build.ArtifactStagingDirectory)/movieops-images"
+          mkdir -p "$artifact_dir"
+
+          docker save "$(backendImage)" | gzip --best > "$artifact_dir/movieops-api.tar.gz"
+          docker save "$(frontendImage)" | gzip --best > "$artifact_dir/movieops-frontend.tar.gz"
+
+          backend_id="$(docker image inspect --format '{{.Id}}' "$(backendImage)")"
+          frontend_id="$(docker image inspect --format '{{.Id}}' "$(frontendImage)")"
+
+          jq -n \
+            --arg commit "$(Build.SourceVersion)" \
+            --arg sourceBranch "$(Build.SourceBranch)" \
+            --arg buildId "$(Build.BuildId)" \
+            --arg buildNumber "$(Build.BuildNumber)" \
+            --arg imageTag "$(imageTag)" \
+            --arg backendImage "$(backendImage)" \
+            --arg backendImageId "$backend_id" \
+            --arg frontendImage "$(frontendImage)" \
+            --arg frontendImageId "$frontend_id" \
+            '{
+              schemaVersion: 1,
+              commit: $commit,
+              sourceBranch: $sourceBranch,
+              buildId: $buildId,
+              buildNumber: $buildNumber,
+              imageTag: $imageTag,
+              images: {
+                backend: { name: $backendImage, imageId: $backendImageId, file: "movieops-api.tar.gz" },
+                frontend: { name: $frontendImage, imageId: $frontendImageId, file: "movieops-frontend.tar.gz" }
+              }
+            }' > "$artifact_dir/manifest.json"
+
+          (
+            cd "$artifact_dir"
+            sha256sum movieops-api.tar.gz movieops-frontend.tar.gz manifest.json > SHA256SUMS
+          )
+        displayName: Package immutable image artifact
+        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+
+      - task: PublishPipelineArtifact@1
+        displayName: Publish movieops-images artifact
+        condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+        inputs:
+          targetPath: $(Build.ArtifactStagingDirectory)/movieops-images
+          artifact: movieops-images
+          publishLocation: pipeline

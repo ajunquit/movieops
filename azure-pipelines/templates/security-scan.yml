@@ -1,0 +1,21 @@
+parameters:
+  - name: displayName
+    type: string
+  - name: target
+    type: string
+
+steps:
+  - bash: |
+      set -euo pipefail
+      mkdir -p "$(Pipeline.Workspace)/.trivycache"
+      docker run --rm \
+        --volume "$(Build.SourcesDirectory):/workspace:ro" \
+        --volume "$(Pipeline.Workspace)/.trivycache:/root/.cache/" \
+        "$(trivyImage)" fs \
+        --scanners vuln \
+        --severity HIGH,CRITICAL \
+        --ignore-unfixed \
+        --exit-code 1 \
+        --no-progress \
+        "/workspace/${{ parameters.target }}"
+    displayName: ${{ parameters.displayName }}

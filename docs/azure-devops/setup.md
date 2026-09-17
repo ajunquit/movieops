@@ -336,6 +336,21 @@ La auditoría final obtuvo `21/21` PASS y `0` FAIL; ADOP-2 queda habilitado.
 
 ## Paso 9 — Crear `MovieOps-CI`
 
+Estado: **paso 06 implementado; pendiente de publicación, registro y runs de
+validación**.
+
+Vista previa:
+
+```powershell
+./scripts/azure-devops/06-configure-ci/configure-ci.ps1 -WhatIf
+```
+
+Después de hacer commit y push a `main`, registrar el pipeline:
+
+```powershell
+./scripts/azure-devops/06-configure-ci/configure-ci.ps1
+```
+
 Después de versionar `azure-pipelines/ci.yml` y sus templates:
 
 1. Crear otro pipeline desde el mismo repositorio y elegir el YAML existente

@@ -2,8 +2,8 @@
 
 ## Estado
 
-En ejecución. **ADOP-0 y ADOP-1 están completados; ADOP-2 es el siguiente
-hito**, después del Sprint 9 validado en Azure y antes del Sprint 10 (Argo CD). La baseline y
+En ejecución. **ADOP-0 y ADOP-1 están completados; ADOP-2 está en
+implementación**, después del Sprint 9 validado en Azure y antes del Sprint 10 (Argo CD). La baseline y
 matriz operativa están en
 [`docs/azure-devops/parity-matrix.md`](../azure-devops/parity-matrix.md).
 
@@ -284,6 +284,9 @@ documentados.
 ### ADOP-2 — CI parity
 
 Objetivo: reproducir el pipeline de CI en Azure Pipelines.
+
+Estado actual: YAML principal, templates y script idempotente del paso 06
+implementados; pendientes de commit/push, registro y validación de los runs.
 
 Entregables:
 
