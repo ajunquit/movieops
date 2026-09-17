@@ -312,8 +312,9 @@ Criterio de salida:
 
 Objetivo: ejecutar el ciclo de infraestructura desde Azure Pipelines.
 
-Estado actual: paso 08 implementado para estabilizar los Object IDs de GitHub
-Actions y Azure DevOps antes de crear cualquier pipeline Terraform.
+Estado actual: paso 08 cerrado con `8/8 PASS` y plan `19 add, 0 change,
+0 destroy`. La subtask 09 implementa únicamente `MovieOps-Genesis`; permanece
+pendiente de publicación, registro y ejecución manual.
 
 Entregables:
 

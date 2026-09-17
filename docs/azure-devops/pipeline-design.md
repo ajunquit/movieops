@@ -120,3 +120,21 @@ ADOP-2 termina únicamente cuando existe evidencia de:
 4. PR sano verde en GitHub Actions y Azure Pipelines.
 5. PR roto fallando en ambos sin artifact.
 6. CI exitoso sin que exista `rg-movieops-dev`.
+
+## ADOP-3 — Genesis
+
+La primera pipeline de infraestructura es manual e independiente:
+
+```text
+MovieOps-Genesis
+  → confirmación environment/confirm
+  → deployment job asociado al Environment dev
+  → WIF exclusiva de la pipeline
+  → fmt → init → validate → Checkov
+  → plan guardado → apply del mismo plan
+  → segundo plan sin cambios
+```
+
+Genesis no consume el artifact CI y no despliega aplicaciones. Su única
+responsabilidad es crear la infraestructura Terraform reproducible. La pipeline
+Apocalipsis se diseñará como una subtask posterior.

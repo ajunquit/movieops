@@ -382,7 +382,7 @@ Auditoría reproducible, después de actualizar los PR sano y roto:
 
 ## Paso 10 — Estabilizar identidades Terraform
 
-Estado: **paso 08 implementado; pendiente de ejecución por el operador**.
+Estado: **completado y verificado: 8/8 PASS**.
 
 ```powershell
 ./scripts/azure-devops/08-stabilize-terraform-identities/verify-terraform-identities.ps1
@@ -395,11 +395,26 @@ reemplace permisos de Key Vault.
 
 ### Gate previo a infraestructura
 
-- [ ] `terraform fmt` y `terraform validate` pasan.
-- [ ] El plan no revoca acceso de la identidad GitHub existente.
-- [ ] Ambos principales están modelados explícitamente.
+- [x] `terraform fmt` y `terraform validate` pasan.
+- [x] El plan no revoca acceso de la identidad GitHub existente.
+- [x] Ambos principales están modelados explícitamente.
 
 ## Paso 11 — Crear y ejecutar `MovieOps-Genesis`
+
+Estado: **subtask 09 implementada; pendiente de publicación, registro y run
+manual**.
+
+Preview:
+
+```powershell
+./scripts/azure-devops/09-configure-genesis/configure-genesis.ps1 -WhatIf
+```
+
+Después del commit/push:
+
+```powershell
+./scripts/azure-devops/09-configure-genesis/configure-genesis.ps1
+```
 
 1. Crear el pipeline desde `/azure-pipelines/genesis.yml`.
 2. Mantener `trigger: none` y parámetros `environment`/`confirm`.

@@ -2,7 +2,8 @@
 
 ## Estado
 
-Implementado; pendiente de ejecución por el operador.
+Completado y verificado: `8/8 PASS`, con plan `19 add, 0 change, 0 destroy` y
+ningún apply.
 
 ## Objetivo
 
