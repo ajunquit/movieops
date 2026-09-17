@@ -288,7 +288,9 @@ Objetivo: reproducir el pipeline de CI en Azure Pipelines.
 Estado actual: `MovieOps-CI` ID `9` registrado. Runs `60` y `61` terminaron
 verdes en `main`, con tests, cobertura y artifact `movieops-images`; la prueba
 también pasó sin `rg-movieops-dev`. Quedan pendientes los escenarios de PR sano
-y PR deliberadamente roto.
+y PR deliberadamente roto. El paso read-only `07-verify-ci-parity` audita esos
+gates usando los PR reales `#31` y `#9`; Dependabot sustituyó el antiguo PR
+sano `#16` al actualizar sus ramas.
 
 Entregables:
 

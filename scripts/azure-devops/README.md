@@ -29,7 +29,8 @@ NN-nombre-del-paso/
 | 03 | [`03-configure-pipelines`](03-configure-pipelines/) | GitHub App, diagnóstico y autorización por pipeline | Completado |
 | 04 | [`04-configure-retention`](04-configure-retention/) | Política de retención del Project | Completado |
 | 05 | [`05-verify-bootstrap`](05-verify-bootstrap/) | Auditoría read-only completa de ADOP-1 | Completado: 21/21 PASS |
-| 06 | [`06-configure-ci`](06-configure-ci/) | Registrar y verificar `MovieOps-CI` | Implementado; pendiente de publicación y ejecución |
+| 06 | [`06-configure-ci`](06-configure-ci/) | Registrar y verificar `MovieOps-CI` | Completado; runs de `main` verdes |
+| 07 | [`07-verify-ci-parity`](07-verify-ci-parity/) | Auditoría read-only de los gates ADOP-2 | Implementado; pendiente de runs PR |
 | 99 | [`99-full-bootstrap`](99-full-bootstrap/) | Orquestador reanudable de todos los pasos | Completado y verificado |
 
 La creación de la organización Azure DevOps y el consentimiento de GitHub App

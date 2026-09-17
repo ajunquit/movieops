@@ -369,6 +369,12 @@ Después de versionar `azure-pipelines/ci.yml` y sus templates:
 
 ### Gate ADOP-2
 
+Auditoría reproducible, después de actualizar los PR sano y roto:
+
+```powershell
+./scripts/azure-devops/07-verify-ci-parity/verify-ci-parity.ps1
+```
+
 - [ ] PR roto falla.
 - [ ] PR sano queda verde.
 - [x] Merge/push a `main` produce un artifact trazable.
