@@ -303,6 +303,8 @@ Referencia: [Retention policies](https://learn.microsoft.com/en-us/azure/devops/
 
 ## Paso 8 — Ejecutar el pipeline de diagnóstico
 
+Estado: **pipeline ejecutado correctamente; auditoría final pendiente**.
+
 El pipeline `MovieOps-Diagnostic` deberá:
 
 1. Usar `AzureCLI@2` con `sc-movieops-azure-wif`.
@@ -319,12 +321,18 @@ El pipeline `MovieOps-Diagnostic` deberá:
 
 ### Gate ADOP-1
 
-- [ ] El pipeline termina verde.
-- [ ] Los logs muestran tenant/subscription correctos.
-- [ ] No se almacenó ni imprimió ningún secreto.
+- [x] El pipeline termina verde (`MovieOps-Diagnostic`, run `59`).
+- [x] Los logs muestran tenant/subscription correctos.
+- [x] No se almacenó ni imprimió ningún secreto.
 - [ ] Los scripts de bootstrap/verify reproducen la configuración comprobable.
 
-No continuar con CI hasta cerrar este gate.
+Para cerrar el último control:
+
+```powershell
+./scripts/azure-devops/05-verify-bootstrap/verify-bootstrap.ps1
+```
+
+No continuar con CI hasta obtener cero fallos en esa auditoría.
 
 ## Paso 9 — Crear `MovieOps-CI`
 
@@ -469,7 +477,6 @@ Cada fallo orgánico nuevo se registra en
 
 ## Qué hacemos ahora
 
-El Paso 1 está completo. La siguiente acción es implementar y ejecutar la
-primera fase de ADOP-1. El bootstrap creará o verificará el Project `MovieOps`,
-la identidad WIF y los controles; se detendrá únicamente cuando requiera el
-consentimiento de GitHub App.
+Los pasos de mutación 00–04 y el run diagnóstico están completos. La siguiente
+acción es ejecutar `05-verify-bootstrap/verify-bootstrap.ps1`. Una auditoría con
+cero fallos cierra ADOP-1 y habilita el Paso 9 / ADOP-2: CI parity.

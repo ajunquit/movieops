@@ -29,6 +29,7 @@ Formato de cada entrada: el de la sección 46 del plan — Síntoma, Impacto, Hi
 - [TS-12 — Apocalipsis eliminó la infraestructura, pero dejó el Resource Group](#ts-12)
 - [TS-13 — El bootstrap creó los Environments, pero falló al recibir cero checks](#ts-13)
 - [TS-14 — La ausencia de acceso global provocó un falso fallo de verificación](#ts-14)
+- [TS-15 — La auditoría RBAC combinó dos filtros incompatibles de Azure CLI](#ts-15)
 
 **Gotchas de herramientas y entorno** → [ver tabla al final](#gotchas)
 
@@ -974,6 +975,79 @@ reutiliza el pipeline y el permiso específico ya creados.
 3. Probar verificadores tanto con flags verdaderos como con campos omitidos.
 4. Separar claramente fallo de mutación y fallo de post-verificación para que
    la recuperación nunca empiece eliminando recursos válidos.
+
+---
+
+<a name="ts-15"></a>
+## TS-15 — La auditoría RBAC combinó dos filtros incompatibles de Azure CLI
+
+**Azure DevOps parity · Azure CLI / auditoría RBAC read-only**
+
+### Síntoma
+
+La auditoría del paso 05 avanzó correctamente hasta la federated credential y
+falló al consultar los roles de la identidad:
+
+```text
+Azure RBAC lookup failed with exit code 1.
+ERROR: group or scope are not required when --all is used
+```
+
+### Impacto
+
+La auditoría no alcanzó los controles RBAC posteriores ni produjo su resumen
+final. No hubo mutación, revocación o creación de role assignments.
+
+### Evidencia
+
+La invocación contenía simultáneamente:
+
+```powershell
+az role assignment list `
+  --assignee-object-id $servicePrincipal.id `
+  --scope $SubscriptionScope `
+  --all
+```
+
+La ayuda de la versión instalada de Azure CLI confirma dos modos distintos:
+`--scope` limita la consulta a un boundary y `--all` enumera todas las
+asignaciones bajo la suscripción. El comando rechaza combinarlos.
+
+### Diagnóstico
+
+Era un error local de construcción de argumentos, no un problema de permisos
+RBAC ni de la service connection. La consulta nunca llegó a Azure Resource
+Manager.
+
+### Root Cause
+
+Se añadió `--all` para evitar omitir asignaciones, pero el script ya expresaba
+el scope exacto requerido. Ambos modos son mutuamente excluyentes en
+`az role assignment list`.
+
+### Solución
+
+Conservar únicamente la consulta por scope:
+
+```powershell
+az role assignment list `
+  --assignee-object-id $servicePrincipal.id `
+  --scope $SubscriptionScope
+```
+
+La respuesta todavía se filtra localmente con
+`$_.scope -eq $SubscriptionScope` para no aceptar roles heredados o asignados a
+otro nivel.
+
+### Acción preventiva
+
+1. Validar combinaciones de flags contra `az <grupo> <comando> --help` de la
+   versión instalada.
+2. Para controles de least privilege, consultar el boundary exacto en vez de
+   enumerar toda la suscripción.
+3. Diferenciar errores de parsing del CLI de respuestas 401/403 del servicio.
+4. Mantener las auditorías sin rollback: una consulta fallida se corrige y se
+   reejecuta sobre el mismo estado.
 
 ---
 

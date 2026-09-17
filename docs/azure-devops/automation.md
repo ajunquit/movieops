@@ -192,6 +192,9 @@ disponible en Project Settings, el script falla de forma accionable o reporta
 
 ### `verify-bootstrap.ps1`
 
+Implementado en `05-verify-bootstrap/verify-bootstrap.ps1`. Pendiente de la
+auditoría final del operador.
+
 Es read-only y constituye la prueba final de ADOP-1:
 
 - Project existe y es privado.

@@ -27,8 +27,8 @@ NN-nombre-del-paso/
 | 01 | [`01-service-connection-wif`](01-service-connection-wif/) | Identidad, service connection WIF y RBAC | Completado |
 | 02 | [`02-configure-environments`](02-configure-environments/) | Environments, branch control y approval | Completado |
 | 03 | [`03-configure-pipelines`](03-configure-pipelines/) | GitHub App, diagnóstico y autorización por pipeline | Completado |
-| 04 | [`04-configure-retention`](04-configure-retention/) | Política de retención del Project | Implementado; pendiente de ejecución |
-| 05 | `05-verify-bootstrap` | Verificación read-only y diagnóstico | Pendiente |
+| 04 | [`04-configure-retention`](04-configure-retention/) | Política de retención del Project | Completado |
+| 05 | [`05-verify-bootstrap`](05-verify-bootstrap/) | Auditoría read-only completa de ADOP-1 | Implementado; pendiente de ejecución |
 | 99 | `99-full-bootstrap` | Orquestador reanudable de todos los pasos | Futuro, después de validar cada script |
 
 La creación de la organización Azure DevOps y el consentimiento de GitHub App

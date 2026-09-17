@@ -2,8 +2,10 @@
 
 ## Estado
 
-Implementado y validado en modo de solo lectura. Pendiente de ejecución por el
-operador.
+Completado y verificado el 16 de septiembre de 2026.
+
+Estado final: runs `30`, artifacts `30`, Pull Request runs `14` y runs
+recientes `3`.
 
 ## Objetivo
 
@@ -187,4 +189,3 @@ lee ni imprime secretos.
 
 Después de verificar la retención, el paso 05 realizará la auditoría read-only
 completa del bootstrap. Luego comenzará ADOP-2: CI parity.
-
