@@ -168,5 +168,6 @@ innecesaria de identidades.
 
 ## Siguiente paso
 
-Con cero fallos, ADOP-1 queda formalmente completado. El siguiente trabajo es
-ADOP-2: implementar CI parity en Azure Pipelines.
+ADOP-1 quedó formalmente completado y ADOP-2 cerró con `12/12 PASS`. El trabajo
+activo es ADOP-3, comenzando por estabilizar identidades Terraform en el paso
+08 antes de crear Genesis.

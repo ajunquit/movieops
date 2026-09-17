@@ -36,11 +36,11 @@ module "container_registry" {
 module "secrets" {
   source = "../../../modules/azure/secrets"
 
-  name                = "kv-movieops-${var.environment}-${random_string.suffix.result}"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  tenant_id           = data.azurerm_client_config.current.tenant_id
-  admin_object_id     = data.azurerm_client_config.current.object_id
+  name                            = "kv-movieops-${var.environment}-${random_string.suffix.result}"
+  location                        = azurerm_resource_group.main.location
+  resource_group_name             = azurerm_resource_group.main.name
+  tenant_id                       = data.azurerm_client_config.current.tenant_id
+  automation_principal_object_ids = var.automation_principal_object_ids
 }
 
 resource "random_password" "postgres_admin" {

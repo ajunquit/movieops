@@ -2,8 +2,15 @@
 
 ## Estado
 
-Implementado; los PR `#31` y `#9` ya generaron runs en Azure Pipelines y están
-pendientes de finalizar.
+Completado y verificado el 17 de septiembre de 2026: `12` controles, `12` PASS,
+`0` WAITING y `0` FAIL.
+
+Evidencia final:
+
+- Main run `67`, commit `961e441c95a0ab6474fabdbdf088c5c33aef769f`.
+- PR sano `#31`, Azure run `65`: `succeeded`.
+- PR roto `#9`, Azure run `64`: `failed`.
+- Ningún run de PR publicó `movieops-images`.
 
 ## Objetivo
 

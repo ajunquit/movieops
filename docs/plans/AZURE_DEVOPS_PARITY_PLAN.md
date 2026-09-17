@@ -2,7 +2,7 @@
 
 ## Estado
 
-En ejecución. **ADOP-0 y ADOP-1 están completados; ADOP-2 está en
+En ejecución. **ADOP-0, ADOP-1 y ADOP-2 están completados; ADOP-3 está en
 implementación**, después del Sprint 9 validado en Azure y antes del Sprint 10 (Argo CD). La baseline y
 matriz operativa están en
 [`docs/azure-devops/parity-matrix.md`](../azure-devops/parity-matrix.md).
@@ -281,16 +281,14 @@ auditoría read-only validó `21/21` controles sin fallos. Los pasos `00–05` y
 orquestador reanudable `99-full-bootstrap` quedaron implementados y
 documentados.
 
-### ADOP-2 — CI parity
+### ADOP-2 — CI parity ✅
 
 Objetivo: reproducir el pipeline de CI en Azure Pipelines.
 
-Estado actual: `MovieOps-CI` ID `9` registrado. Runs `60` y `61` terminaron
-verdes en `main`, con tests, cobertura y artifact `movieops-images`; la prueba
-también pasó sin `rg-movieops-dev`. Quedan pendientes los escenarios de PR sano
-y PR deliberadamente roto. El paso read-only `07-verify-ci-parity` audita esos
-gates usando los PR reales `#31` y `#9`; Dependabot sustituyó el antiguo PR
-sano `#16` al actualizar sus ramas.
+Estado final: `MovieOps-CI` ID `9`; main run `67` publicó tests, cobertura y
+`movieops-images` sin que existiera `rg-movieops-dev`. El PR sano `#31` terminó
+verde en Azure run `65`; el PR roto `#9` falló en Azure run `64`; ninguno
+publicó el artifact. La auditoría `07-verify-ci-parity` cerró `12/12 PASS`.
 
 Entregables:
 
@@ -313,6 +311,9 @@ Criterio de salida:
 ### ADOP-3 — Terraform parity: Genesis y Apocalipsis
 
 Objetivo: ejecutar el ciclo de infraestructura desde Azure Pipelines.
+
+Estado actual: paso 08 implementado para estabilizar los Object IDs de GitHub
+Actions y Azure DevOps antes de crear cualquier pipeline Terraform.
 
 Entregables:
 

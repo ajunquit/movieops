@@ -336,8 +336,8 @@ La auditoría final obtuvo `21/21` PASS y `0` FAIL; ADOP-2 queda habilitado.
 
 ## Paso 9 — Crear `MovieOps-CI`
 
-Estado: **paso 06 implementado; pendiente de publicación, registro y runs de
-validación**.
+Estado: **completado y verificado**. `MovieOps-CI` ID `9`; auditoría final
+`12/12 PASS`.
 
 Vista previa:
 
@@ -375,12 +375,18 @@ Auditoría reproducible, después de actualizar los PR sano y roto:
 ./scripts/azure-devops/07-verify-ci-parity/verify-ci-parity.ps1
 ```
 
-- [ ] PR roto falla.
-- [ ] PR sano queda verde.
+- [x] PR roto falla en ambas plataformas (PR `#9`, Azure run `64`).
+- [x] PR sano queda verde en ambas plataformas (PR `#31`, Azure run `65`).
 - [x] Merge/push a `main` produce un artifact trazable.
 - [x] CI continúa funcionando con `rg-movieops-dev` inexistente.
 
 ## Paso 10 — Estabilizar identidades Terraform
+
+Estado: **paso 08 implementado; pendiente de ejecución por el operador**.
+
+```powershell
+./scripts/azure-devops/08-stabilize-terraform-identities/verify-terraform-identities.ps1
+```
 
 Antes de Genesis, Terraform dejará de depender exclusivamente de
 `data.azurerm_client_config.current.object_id`. Se declararán de forma estable

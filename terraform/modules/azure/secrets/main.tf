@@ -9,8 +9,15 @@ resource "azurerm_key_vault" "main" {
   soft_delete_retention_days = 7
 }
 
-resource "azurerm_role_assignment" "current_user_secrets_officer" {
+resource "azurerm_role_assignment" "automation_secrets_officer" {
+  for_each = var.automation_principal_object_ids
+
   scope                = azurerm_key_vault.main.id
   role_definition_name = "Key Vault Secrets Officer"
-  principal_id         = var.admin_object_id
+  principal_id         = each.value
+}
+
+moved {
+  from = azurerm_role_assignment.current_user_secrets_officer
+  to   = azurerm_role_assignment.automation_secrets_officer["github_actions"]
 }

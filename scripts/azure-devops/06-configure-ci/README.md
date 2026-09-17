@@ -2,9 +2,9 @@
 
 ## Estado
 
-Implementado y registrado como `MovieOps-CI` (ID `9`). Runs `60` y `61`
-completaron correctamente en `main`; quedan pendientes los escenarios de PR
-sano y PR deliberadamente roto.
+Completado y registrado como `MovieOps-CI` (ID `9`). El cierre de ADOP-2 quedó
+demostrado con main run `67`, PR sano `#31`/run `65`, PR roto `#9`/run `64` y
+auditoría `12/12 PASS`.
 
 ## Objetivo
 

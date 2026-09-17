@@ -247,5 +247,5 @@ self-hosted; no es un fallo de WIF.
 
 ## Siguiente paso
 
-Cuando el diagnóstico sea verde, ADOP-1 queda cerrado. El siguiente entregable
-es ADOP-2: diseñar e implementar `azure-pipelines/ci.yml` y sus templates.
+El diagnóstico cerró ADOP-1. ADOP-2 también quedó completado con
+`MovieOps-CI`; el trabajo activo es ADOP-3, ejecutado subtask por subtask.

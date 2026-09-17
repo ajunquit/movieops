@@ -2,9 +2,9 @@
 
 ## Estado
 
-ADOP-2 en implementación. Este documento describe el CI versionado en
-`azure-pipelines/ci.yml`; se ampliará cuando ADOP-3–ADOP-5 incorporen
-infraestructura y despliegue.
+ADOP-2 completado con `12/12 PASS`. Este documento describe el CI versionado en
+`azure-pipelines/ci.yml`; se ampliará paso a paso cuando ADOP-3–ADOP-5
+incorporen infraestructura y despliegue.
 
 ## Principios
 
