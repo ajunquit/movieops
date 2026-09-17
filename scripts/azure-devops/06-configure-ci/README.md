@@ -2,7 +2,9 @@
 
 ## Estado
 
-Implementado; pendiente de publicación en `main`, registro y ejecución.
+Implementado y registrado como `MovieOps-CI` (ID `9`). Runs `60` y `61`
+completaron correctamente en `main`; quedan pendientes los escenarios de PR
+sano y PR deliberadamente roto.
 
 ## Objetivo
 
@@ -33,7 +35,8 @@ PR o push a main
 - [`backend-ci.yml`](../../../azure-pipelines/templates/backend-ci.yml):
   restore, format, build, unit/integration tests, coverage y scan.
 - [`frontend-ci.yml`](../../../azure-pipelines/templates/frontend-ci.yml):
-  install, type-check, tests, coverage, build y scan.
+  Node mediante `UseNode@1`, install, type-check, tests, coverage, build y
+  scan.
 - [`security-scan.yml`](../../../azure-pipelines/templates/security-scan.yml):
   análisis de dependencias HIGH/CRITICAL con Trivy.
 - [`docker-build.yml`](../../../azure-pipelines/templates/docker-build.yml):
@@ -156,10 +159,10 @@ duplicados. Si falla:
 
 ## Gate ADOP-2
 
-- [ ] Run manual sobre `main` verde.
-- [ ] Resultados backend/frontend visibles en **Tests**.
-- [ ] Cobertura backend/frontend visible en **Code Coverage**.
-- [ ] Artifact `movieops-images` vinculado al SHA correcto.
+- [x] Run manual sobre `main` verde (`60`, `ci-20260917-1`).
+- [x] Resultados backend/frontend visibles en **Tests**.
+- [x] Cobertura backend/frontend visible en **Code Coverage**.
+- [x] Artifact `movieops-images` vinculado al SHA correcto.
 - [ ] PR sano verde en GitHub y Azure Pipelines.
 - [ ] PR roto falla y no produce artifact.
-- [ ] CI funciona con `rg-movieops-dev` inexistente.
+- [x] CI funciona con `rg-movieops-dev` inexistente.

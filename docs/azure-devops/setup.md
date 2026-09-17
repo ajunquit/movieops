@@ -371,8 +371,8 @@ Después de versionar `azure-pipelines/ci.yml` y sus templates:
 
 - [ ] PR roto falla.
 - [ ] PR sano queda verde.
-- [ ] Merge a `main` produce un artifact trazable.
-- [ ] CI continúa funcionando con `rg-movieops-dev` inexistente.
+- [x] Merge/push a `main` produce un artifact trazable.
+- [x] CI continúa funcionando con `rg-movieops-dev` inexistente.
 
 ## Paso 10 — Estabilizar identidades Terraform
 

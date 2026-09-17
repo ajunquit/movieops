@@ -1070,6 +1070,7 @@ Fallos menores, de causa evidente una vez vistos, pero que cuestan tiempo la pri
 | G-10 | Tras `terraform destroy` queda un recurso `ContainerInsights(...)` huérfano | El addon `oms_agent` de AKS creó un *Solution* fuera del state y la protección predeterminada impidió borrar el Resource Group | Permitir cascade delete solo para el grupo desechable del ambiente y verificar su ausencia; ver TS-12 |
 | G-11 | El cliente de base de datos no conecta a `localhost:5432` con el stack levantado | Postgres no publicaba puerto al host: el backend le habla por la red interna de Docker | Agregado `ports: ["5432:5432"]` en `docker-compose.yml` (solo para inspección local) |
 | G-12 | Los integration tests fallan con `DockerUnavailableException` y endpoint `npipe://./pipe/docker_engine` | Docker Desktop no está iniciado en la estación Windows; Testcontainers no puede crear PostgreSQL | Iniciar Docker Desktop y verificar `docker info`. En Azure Pipelines, usar `ubuntu-latest`, que incluye Docker; no omitir los tests |
+| G-13 | Run verde con dos warnings: `NodeTool@0 is deprecated` | Azure DevOps reemplazó la tarea `NodeTool@0`; su input era `versionSpec` | Migrar a `UseNode@1` y cambiar el input a `version: 22.x` |
 
 ---
 

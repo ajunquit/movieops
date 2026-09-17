@@ -285,8 +285,10 @@ documentados.
 
 Objetivo: reproducir el pipeline de CI en Azure Pipelines.
 
-Estado actual: YAML principal, templates y script idempotente del paso 06
-implementados; pendientes de commit/push, registro y validación de los runs.
+Estado actual: `MovieOps-CI` ID `9` registrado. Runs `60` y `61` terminaron
+verdes en `main`, con tests, cobertura y artifact `movieops-images`; la prueba
+también pasó sin `rg-movieops-dev`. Quedan pendientes los escenarios de PR sano
+y PR deliberadamente roto.
 
 Entregables:
 
