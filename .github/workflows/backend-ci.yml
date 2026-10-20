@@ -35,7 +35,7 @@ jobs:
         run: dotnet test tests/MovieOps.IntegrationTests --no-build --configuration Release
 
       - name: Upload coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-coverage
           path: app/backend/coverage
